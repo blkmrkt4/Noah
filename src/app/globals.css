@@ -1,26 +1,67 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* EY Brand Colors */
+  --ey-yellow: #FFE600;
+  --ey-black: #000000;
+  --ey-white: #FFFFFF;
+  --ey-light-gray: #CCCCCC;
+  --ey-sonic-silver: #797878;
+  --ey-dark-gray: #333333;
+
+  /* Frame/Spectrum Palette */
+  --frame-yellow: #FFE600;
+  --frame-orange: #FF7D1E;
+  --frame-red: #FF3C00;
+  --frame-magenta: #FF32FF;
+  --frame-purple: #B400FF;
+  --frame-blue: #4696FF;
+  --frame-teal: #32FFFF;
+  --frame-lime: #B4FF00;
+  --frame-green: #00C864;
+
+  --background: #000000;
+  --foreground: #FFFFFF;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-ey-yellow: var(--ey-yellow);
+  --color-ey-black: var(--ey-black);
+  --color-ey-light-gray: var(--ey-light-gray);
+  --color-ey-sonic-silver: var(--ey-sonic-silver);
+  --color-ey-dark-gray: var(--ey-dark-gray);
+  --color-frame-yellow: var(--frame-yellow);
+  --color-frame-orange: var(--frame-orange);
+  --color-frame-red: var(--frame-red);
+  --color-frame-magenta: var(--frame-magenta);
+  --color-frame-purple: var(--frame-purple);
+  --color-frame-blue: var(--frame-blue);
+  --color-frame-teal: var(--frame-teal);
+  --color-frame-lime: var(--frame-lime);
+  --color-frame-green: var(--frame-green);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "EYInterstate", Arial, Helvetica, sans-serif;
+}
+
+/* Scrollbar styling for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ey-dark-gray);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ey-sonic-silver);
+  border-radius: 4px;
 }

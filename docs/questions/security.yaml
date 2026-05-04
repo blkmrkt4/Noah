@@ -1,0 +1,321 @@
+# Load when: working on InfoSec assessment, Security Certification, SRA, AI InfoSec Assessment, or security exceptions. Skip otherwise.
+
+section: security
+description: |
+  Information security review. Activates for every project (the EY Global
+  Information Security Policy applies firm-wide). Covers intrinsic risk
+  rating, mandatory controls keyed to data classification, vulnerability
+  testing, Security Certification, Supplier Risk Assurance for vendors and
+  cloud providers, the InfoSec AI Assessment branch, and the security
+  exception process. Reviewer domain: Security Reviewer.
+
+questions:
+
+  # ─────────────────────────────────────────────────────
+  # Intrinsic risk rating
+  # ─────────────────────────────────────────────────────
+
+  - slug: security.risk.intrinsic_rating
+    prompt: "What is the intrinsic risk rating for the asset?"
+    answer_type: single_select
+    options:
+      - {value: high, label: "High"}
+      - {value: moderate, label: "Moderate"}
+      - {value: low, label: "Low"}
+      - {value: not_yet_rated, label: "Not yet rated — Security Reviewer will rate"}
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "Driven by data classification, audience reach, criticality, and exposure. C3/C4 + external audience trends high."
+    activates_when: []
+
+  - slug: security.risk.threat_model_summary
+    prompt: "Summarize the threat model: what attacker, what target, what damage."
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "Pre-populated from any uploaded security whitepaper or threat-model document."
+    activates_when: []
+
+  # ─────────────────────────────────────────────────────
+  # Architecture
+  # ─────────────────────────────────────────────────────
+
+  - slug: security.architecture.diagram_uploaded
+    prompt: "Has an architecture / data flow diagram been uploaded?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: security.architecture.deployment_topology
+    prompt: "Describe the deployment topology (frontend / backend / data store / external dependencies)."
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: security.architecture.network_exposure
+    prompt: "What is the network exposure?"
+    answer_type: single_select
+    options:
+      - {value: internet_facing, label: "Internet-facing"}
+      - {value: ey_internal_network, label: "EY internal network only"}
+      - {value: client_network, label: "Client network only"}
+      - {value: private_vpc, label: "Private VPC / private link"}
+      - {value: hybrid, label: "Hybrid"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  # ─────────────────────────────────────────────────────
+  # Authentication and access control
+  # ─────────────────────────────────────────────────────
+
+  - slug: security.auth.authentication_method
+    prompt: "What authentication method is used?"
+    answer_type: multi_select
+    options:
+      - {value: ey_sso, label: "EY SSO"}
+      - {value: client_sso, label: "Client SSO"}
+      - {value: oauth, label: "OAuth / OIDC"}
+      - {value: saml, label: "SAML"}
+      - {value: api_key, label: "API key"}
+      - {value: local_password, label: "Local username + password"}
+      - {value: certificate, label: "Certificate-based"}
+      - {value: none, label: "No authentication (public)"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: security.auth.mfa_enforced
+    prompt: "Is multi-factor authentication enforced for all users?"
+    answer_type: single_select
+    options:
+      - {value: enforced_all, label: "Enforced for all users"}
+      - {value: enforced_privileged, label: "Enforced for privileged users only"}
+      - {value: optional, label: "Available but not enforced"}
+      - {value: not_implemented, label: "Not implemented"}
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "C4 data requires MFA enforcement for all users."
+    activates_when: []
+
+  - slug: security.auth.role_based_access
+    prompt: "Is role-based access control (RBAC) implemented?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when: []
+
+  - slug: security.auth.privileged_access_management
+    prompt: "How is privileged access managed (admin, root, service accounts)?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: data.classification.highest_tier
+        condition: in
+        values: [c3, c4]
+
+  # ─────────────────────────────────────────────────────
+  # Encryption
+  # ─────────────────────────────────────────────────────
+
+  - slug: security.encryption.at_rest
+    prompt: "Is data encrypted at rest?"
+    answer_type: single_select
+    options:
+      - {value: yes_aes256, label: "Yes — AES-256 or stronger"}
+      - {value: yes_other, label: "Yes — other (specify)"}
+      - {value: partial, label: "Partial (some data stores only)"}
+      - {value: no, label: "No"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when: []
+
+  - slug: security.encryption.in_transit
+    prompt: "Is data encrypted in transit?"
+    answer_type: single_select
+    options:
+      - {value: tls_1_3, label: "Yes — TLS 1.3"}
+      - {value: tls_1_2, label: "Yes — TLS 1.2"}
+      - {value: tls_lower, label: "Yes — TLS 1.1 or older"}
+      - {value: no, label: "No"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when: []
+
+  - slug: security.encryption.key_management
+    prompt: "How are encryption keys managed?"
+    answer_type: single_select
+    options:
+      - {value: ey_kms, label: "EY-managed KMS"}
+      - {value: cloud_kms, label: "Cloud provider KMS (Azure Key Vault, AWS KMS, GCP KMS)"}
+      - {value: customer_managed, label: "Customer-managed keys (BYOK)"}
+      - {value: hsm, label: "Dedicated HSM"}
+      - {value: application_managed, label: "Application-managed (not recommended for C3/C4)"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: data.classification.highest_tier
+        condition: in
+        values: [c3, c4]
+
+  # ─────────────────────────────────────────────────────
+  # Vulnerability testing and certification
+  # ─────────────────────────────────────────────────────
+
+  - slug: security.testing.vulnerability_scan_status
+    prompt: "What is the vulnerability scan status?"
+    answer_type: single_select
+    options:
+      - {value: completed_clean, label: "Completed — no high/critical findings"}
+      - {value: completed_remediated, label: "Completed — findings remediated"}
+      - {value: completed_open_findings, label: "Completed — findings open"}
+      - {value: in_progress, label: "In progress"}
+      - {value: not_started, label: "Not started"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when: []
+
+  - slug: security.testing.penetration_test_status
+    prompt: "What is the penetration test status?"
+    answer_type: single_select
+    options:
+      - {value: completed_clean, label: "Completed — no exploitable findings"}
+      - {value: completed_remediated, label: "Completed — findings remediated"}
+      - {value: completed_open_findings, label: "Completed — findings open"}
+      - {value: in_progress, label: "In progress"}
+      - {value: not_required, label: "Not required (low risk)"}
+      - {value: not_started, label: "Not started"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: security.risk.intrinsic_rating
+        condition: in
+        values: [high, moderate]
+
+  - slug: security.certification.status
+    prompt: "What is the EY Security Certification status?"
+    answer_type: single_select
+    options:
+      - {value: certified, label: "Certified"}
+      - {value: in_progress, label: "In progress"}
+      - {value: certification_with_exceptions, label: "Certified with exceptions logged"}
+      - {value: not_started, label: "Not started"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when: []
+
+  # ─────────────────────────────────────────────────────
+  # Logging and monitoring
+  # ─────────────────────────────────────────────────────
+
+  - slug: security.logging.audit_log_enabled
+    prompt: "Are audit logs captured for security-relevant events?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when: []
+
+  - slug: security.logging.siem_integration
+    prompt: "Are logs forwarded to EY's SIEM / security monitoring?"
+    answer_type: single_select
+    options:
+      - {value: integrated, label: "Integrated"}
+      - {value: planned, label: "Planned"}
+      - {value: not_applicable, label: "Not applicable (low-risk asset)"}
+      - {value: no, label: "No"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: security.risk.intrinsic_rating
+        condition: in
+        values: [high, moderate]
+
+  # ─────────────────────────────────────────────────────
+  # Supplier Risk Assurance (SRA)
+  # ─────────────────────────────────────────────────────
+
+  - slug: security.sra.suppliers
+    prompt: "List the third-party suppliers / vendors / cloud providers in scope."
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "Pre-populated from RepoFindings (cloud SDKs, third-party API clients) and any supplier list document."
+    activates_when:
+      - parent_slug: vendor.has_third_party_relationship
+        condition: equals
+        value: true
+
+  - slug: security.sra.supplier_assessment_status
+    prompt: "What is the SRA status for each supplier?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: low
+    help_text: "Per supplier: completed / in progress / not started / not required."
+    activates_when:
+      - parent_slug: vendor.has_third_party_relationship
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # InfoSec AI Assessment
+  # ─────────────────────────────────────────────────────
+
+  - slug: security.ai_infosec.completed
+    prompt: "Has the InfoSec AI Assessment been completed?"
+    answer_type: single_select
+    options:
+      - {value: completed, label: "Completed"}
+      - {value: in_progress, label: "In progress"}
+      - {value: not_started, label: "Not started"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  - slug: security.ai_infosec.prompt_injection_controls
+    prompt: "What controls exist against prompt injection, jailbreaks, and data exfiltration via the AI?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Exceptions
+  # ─────────────────────────────────────────────────────
+
+  - slug: security.exceptions.has_exceptions
+    prompt: "Are there any open security exceptions or accepted risks?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: low
+    activates_when: []
+
+  - slug: security.exceptions.detail
+    prompt: "Detail each exception: what control is not met, what compensating control exists, who accepted the risk, when it expires."
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: none
+    activates_when:
+      - parent_slug: security.exceptions.has_exceptions
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # NOTE: more questions to be added by Question Authors
+  # ─────────────────────────────────────────────────────
+  # Areas flagged for expansion:
+  # - Per-control mandatory checklist keyed to risk rating (full ISMS control map)
+  # - Penetration test scope and re-test cadence
+  # - Incident response runbook references
+  # - DDoS / WAF / rate-limiting controls for internet-facing assets
+  # - Secrets management (vault use, rotation cadence)
+  # - Backup and restore validation
+  # - Cloud security posture management findings

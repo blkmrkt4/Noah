@@ -1,0 +1,173 @@
+---
+title: ARC Question Dependency DAG
+---
+%% Load when: understanding how foundational answers cascade into section
+%% activation. Useful when adding new questions or debugging unexpected
+%% section visibility.
+flowchart TB
+
+  subgraph FOUND["Foundational layer (intake.yaml)"]
+    direction TB
+    F_NAME["asset.name"]
+    F_DESC["asset.description"]
+    F_APM["asset.apm_id"]
+    F_OWNERS["owners.business_owner<br/>owners.commercial_owner<br/>owners.it_application_owner"]
+    F_TYPE["software.application_type<br/>(COTS / homegrown / SaaS)"]
+    F_AUDIENCE["audience.types<br/>(EY / external clients /<br/>vendors / public)"]
+    F_DATACLASS["data.classification.highest_tier<br/>(C1 / C2 / C3 / C4)"]
+    F_DATATYPES["data.types<br/>(personal / client / EY business /<br/>third-party / synthetic)"]
+    F_DATASOURCES["data.sources<br/>(internal / client / 3p / public)"]
+    F_JURIS["jurisdictions.target_countries<br/>scope_type"]
+    F_HOSTING["hosting.environment<br/>hosting.regions"]
+    F_SERVICELINES["service.target_service_lines"]
+    F_AI["ai.exists<br/>(yes / no)"]
+    F_OSS["software.uses_oss"]
+    F_NSS["software.is_non_standard"]
+    F_VENDOR["vendor.has_third_party_relationship"]
+    F_CLIENT["client.is_audit_client<br/>client.is_restricted_entity"]
+    F_EXTPARTY["software.created_with_external_party"]
+  end
+
+  subgraph TRIAGE["Triage / routing layer (triage.yaml)"]
+    direction TB
+    T_BIA_NEEDED["Is BIA required?"]
+    T_PIA_NEEDED["Is PIA required?"]
+    T_AIRA_NEEDED["Is AIRA required?"]
+    T_AIQRM_NEEDED["Is AIQRM required?"]
+    T_INDEP_NEEDED["Is Independence review required?"]
+    T_OSS_PATH["OSS fast-lane or full?"]
+    T_NSS_PATH["NSS path determination"]
+    T_BRAND_PATH["Brand streamlined or full?"]
+    T_DSO_LANE["DSO green-lane or yellow-lane?"]
+    T_PATTERN_HINT["Possible Pattern matches"]
+  end
+
+  subgraph SEC_PRIVACY["privacy.yaml"]
+    P_PIA["PIA branch"]
+    P_DPIA["DPIA evaluation"]
+    P_XBORDER["Cross-border transfer"]
+    P_SUBJECTRIGHTS["Subject rights"]
+  end
+
+  subgraph SEC_AI["ai.yaml"]
+    A_AIRA["AIRA classification"]
+    A_AIQRM["AIQRM (validation, monitoring)"]
+    A_DSO["DSO data risk"]
+    A_AGENT["Agent governance"]
+    A_3P["3rd-party model"]
+  end
+
+  subgraph SEC_INDEP["independence.yaml"]
+    I_AUDIT["Audit-client permissibility"]
+    I_BRIDGE["BRIDGE (vendor)"]
+    I_OWNWORK["Own-work / management /<br/>advocacy"]
+    I_SORT["SORT classification"]
+  end
+
+  subgraph SEC_SECURITY["security.yaml"]
+    S_RISK["Intrinsic risk rating"]
+    S_CERT["Security Certification"]
+    S_SRA["SRA (suppliers)"]
+    S_AIINFOSEC["InfoSec AI Assessment"]
+    S_EXC["Security exceptions"]
+  end
+
+  subgraph SEC_BRAND["brand.yaml + accessibility.yaml"]
+    B_NAMING["Naming"]
+    B_UX["UX / Motif"]
+    B_ACCESS["WCAG 2.1 AA"]
+  end
+
+  subgraph SEC_OSSNSS["oss.yaml + nss.yaml"]
+    O_COMPONENTS["Component listing"]
+    O_LICENSES["License compatibility"]
+    O_MEND["MEND scan"]
+    N_LICENSEPARTY["License-acquiring party"]
+    N_DATASHARE["Data shared with NSS"]
+  end
+
+  subgraph SEC_CONTRACTS["contracts.yaml"]
+    C_OWNERSHIP["Ownership / IP"]
+    C_RIGHTS["Rights to use data"]
+    C_CIC["CIC status"]
+    C_SOW["SOW boundary"]
+  end
+
+  subgraph SEC_RETENTION["retention.yaml + bia.yaml"]
+    R_SCHEDULE["Retention schedule"]
+    R_LOGS["Log retention"]
+    BIA_RTO["RTO / RPO"]
+    BIA_CRIT["Business criticality"]
+  end
+
+  subgraph SEC_SERVICELINES["service-lines.yaml"]
+    SL_TAX["Tax overlay"]
+    SL_ASSURANCE["Assurance overlay"]
+    SL_CONSULTING["Consulting overlay"]
+    SL_SAT["SaT overlay"]
+  end
+
+  F_DATACLASS --> T_PIA_NEEDED
+  F_DATATYPES --> T_PIA_NEEDED
+  F_AI --> T_AIRA_NEEDED
+  T_AIRA_NEEDED --> T_AIQRM_NEEDED
+  T_AIRA_NEEDED --> T_DSO_LANE
+  F_CLIENT --> T_INDEP_NEEDED
+  F_VENDOR --> T_INDEP_NEEDED
+  F_OSS --> T_OSS_PATH
+  F_NSS --> T_NSS_PATH
+  F_AUDIENCE --> T_BRAND_PATH
+
+  T_PIA_NEEDED --> P_PIA
+  T_PIA_NEEDED --> P_DPIA
+  F_JURIS --> P_XBORDER
+  F_DATATYPES --> P_SUBJECTRIGHTS
+
+  T_AIRA_NEEDED --> A_AIRA
+  T_AIQRM_NEEDED --> A_AIQRM
+  T_DSO_LANE --> A_DSO
+  F_AI --> A_AGENT
+  F_AI --> A_3P
+
+  T_INDEP_NEEDED --> I_AUDIT
+  F_VENDOR --> I_BRIDGE
+  F_SERVICELINES --> I_OWNWORK
+  T_INDEP_NEEDED --> I_SORT
+
+  F_DATACLASS --> S_RISK
+  F_HOSTING --> S_CERT
+  F_VENDOR --> S_SRA
+  F_AI --> S_AIINFOSEC
+  S_RISK --> S_EXC
+
+  F_AUDIENCE --> B_NAMING
+  T_BRAND_PATH --> B_UX
+  F_AUDIENCE --> B_ACCESS
+
+  T_OSS_PATH --> O_COMPONENTS
+  T_OSS_PATH --> O_LICENSES
+  T_OSS_PATH --> O_MEND
+  T_NSS_PATH --> N_LICENSEPARTY
+  T_NSS_PATH --> N_DATASHARE
+
+  F_EXTPARTY --> C_OWNERSHIP
+  F_DATASOURCES --> C_RIGHTS
+  C_RIGHTS --> C_CIC
+  C_RIGHTS --> C_SOW
+
+  F_DATACLASS --> R_SCHEDULE
+  R_SCHEDULE --> R_LOGS
+  F_TYPE --> BIA_RTO
+  F_TYPE --> BIA_CRIT
+
+  F_SERVICELINES --> SL_TAX
+  F_SERVICELINES --> SL_ASSURANCE
+  F_SERVICELINES --> SL_CONSULTING
+  F_SERVICELINES --> SL_SAT
+
+  classDef foundation fill:#FFE600,stroke:#000,stroke-width:2px,color:#000
+  classDef triage fill:#FF7D1E,stroke:#000,stroke-width:2px,color:#000
+  classDef section fill:#000,stroke:#FFE600,stroke-width:1px,color:#FFF
+
+  class F_NAME,F_DESC,F_APM,F_OWNERS,F_TYPE,F_AUDIENCE,F_DATACLASS,F_DATATYPES,F_DATASOURCES,F_JURIS,F_HOSTING,F_SERVICELINES,F_AI,F_OSS,F_NSS,F_VENDOR,F_CLIENT,F_EXTPARTY foundation
+  class T_BIA_NEEDED,T_PIA_NEEDED,T_AIRA_NEEDED,T_AIQRM_NEEDED,T_INDEP_NEEDED,T_OSS_PATH,T_NSS_PATH,T_BRAND_PATH,T_DSO_LANE,T_PATTERN_HINT triage

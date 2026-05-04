@@ -1,0 +1,100 @@
+# ARC Question Corpus Schema
+# Load when: building or modifying the corpus loader, or authoring new questions.
+# Pair with questions/README.md. Skip if you're not touching corpus mechanics.
+#
+# This file defines the structure every question YAML file must conform to.
+# It is meta — it describes the shape of the other files, not questions themselves.
+
+schema_version: 1
+
+# Each section file is a YAML document with a top-level structure:
+#
+#   section: <slug>           # must match an entry in _sections.yaml
+#   description: <string>     # human-readable description of the section
+#   questions:                # list of question entries
+#     - slug: ...
+#       ...
+
+question_entry:
+  required_fields:
+    - slug              # string, dotted notation (e.g., data.classification.highest_tier)
+    - prompt            # string, the user-facing question
+    - answer_type       # one of the answer_type enum below
+    - required          # boolean, whether mandatory before Section Release
+    - activates_when    # list of activation conditions; empty list means foundational
+  optional_fields:
+    - options                       # required when answer_type is single_select or multi_select
+    - help_text                     # string, additional guidance
+    - examples                      # list of strings
+    - ai_prepopulation_priority     # one of: high, medium, low, none (default: medium)
+    - routes_to_review_domains      # list of domain slugs (default: inferred from section)
+    - validation                    # JSON object for type-specific validation rules
+
+answer_types:
+  - single_select       # one of N options (requires options)
+  - multi_select        # zero or more of N options (requires options)
+  - boolean             # yes / no
+  - text_short          # single-line free text
+  - text_long           # multi-line free text
+  - number              # numeric
+  - date                # calendar date
+  - entity_ref          # reference to another entity (requires entity_type in validation)
+  - entity_ref_multi    # list of entity references (requires entity_type in validation)
+  - url                 # URL with format validation
+
+option_entry:
+  required_fields:
+    - value             # string or boolean, the stored value
+    - label             # string, the displayed label
+  optional_fields:
+    - help_text         # additional explanation for this specific option
+
+activation_condition:
+  required_fields:
+    - condition         # one of the conditions enum below
+  conditional_fields:
+    parent_slug:        # required for: equals, not_equals, in, not_in, contains, not_contains
+    value:              # required for: equals, not_equals, contains, not_contains
+    values:             # required for: in, not_in
+    conditions:         # required for: any_of, all_of (nested list of activation_condition)
+
+conditions:
+  - equals              # parent answer equals value
+  - not_equals          # parent answer does not equal value
+  - in                  # parent answer is in values list
+  - not_in              # parent answer is not in values list
+  - contains            # multi_select parent's answer list contains value
+  - not_contains        # multi_select parent's answer list does not contain value
+  - any_of              # nested OR
+  - all_of              # nested AND (default for multiple activates_when entries)
+
+review_domains:
+  # Used for routes_to_review_domains.
+  - privacy
+  - ai
+  - independence
+  - security
+  - brand
+  - accessibility
+  - oss
+  - nss
+  - contracts
+  - retention
+  - bia
+  - service-lines
+
+ai_prepopulation_priority:
+  # Guidance to the ingestion pipeline.
+  - high      # actively scan documents and repo to pre-populate; high confidence threshold for auto-fill
+  - medium    # default; pre-populate when clear signal exists
+  - low       # only pre-populate from explicit, named statements in documents
+  - none      # never pre-populate; user must answer themselves
+
+entity_types:
+  # Used as validation.entity_type for entity_ref and entity_ref_multi answer types.
+  - User
+  - Jurisdiction
+  - ServiceLine
+  - Vendor
+  - Document
+  - Repository

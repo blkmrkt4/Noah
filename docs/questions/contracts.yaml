@@ -1,0 +1,188 @@
+# Load when: working on IP ownership, data rights, CIC, SOW boundary, subprocessors, or contract-clause review. Skip otherwise.
+
+section: contracts
+description: |
+  Contracts, IP ownership, and data rights. Activates for every project (the
+  ownership branch always applies). Additional branches activate for client
+  data, third-party licensed data, and external-party-developed code.
+  Reviewer domain: Contracts (GCO). See `risk-domains.md` § Contracts for the
+  open question on whether this should be a dedicated Reviewer type or
+  absorbed into Independence.
+
+questions:
+
+  # ─────────────────────────────────────────────────────
+  # Ownership — always applies
+  # ─────────────────────────────────────────────────────
+
+  - slug: contracts.ownership.primary_owner
+    prompt: "Which entity owns the asset's IP?"
+    answer_type: single_select
+    options:
+      - {value: ey_global, label: "EY Global (EYGS)"}
+      - {value: ey_member_firm, label: "EY Member Firm"}
+      - {value: ey_partnership, label: "EY partnership entity (EYGP)"}
+      - {value: shared_with_vendor, label: "Shared with vendor / co-developer"}
+      - {value: client_owned, label: "Client-owned (EY built on client's behalf)"}
+      - {value: third_party_owned, label: "Third-party owned (EY licensed)"}
+      - {value: unclear, label: "Unclear — needs review"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when: []
+
+  - slug: contracts.ownership.documentation
+    prompt: "What documentation supports the ownership position (assignment, SOW, KSA, license)?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: low
+    activates_when: []
+
+  - slug: contracts.ownership.transfer_completed
+    prompt: "If the asset was developed with an external party, has IP transfer been completed?"
+    answer_type: single_select
+    options:
+      - {value: completed, label: "Completed — assignment in place"}
+      - {value: partial, label: "Partial — some elements transferred, others outstanding"}
+      - {value: not_required, label: "Not required (EY-only development)"}
+      - {value: not_done, label: "Not done"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: software.created_with_external_party
+        condition: equals
+        value: true
+
+  - slug: contracts.ownership.contributor_list
+    prompt: "List all external contributors (vendors, contractors, clients) and their contribution scope."
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: software.created_with_external_party
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Data rights — per source
+  # ─────────────────────────────────────────────────────
+
+  - slug: contracts.data_rights.client_data_basis
+    prompt: "On what basis is EY entitled to use the client data for this purpose?"
+    answer_type: multi_select
+    options:
+      - {value: sow_explicit, label: "SOW / engagement contract explicitly permits"}
+      - {value: sow_implicit, label: "SOW / engagement contract implicitly covers"}
+      - {value: cic, label: "Client Information Consent (CIC) clause in place"}
+      - {value: separate_consent, label: "Separate written consent obtained"}
+      - {value: not_yet_clear, label: "Not yet clear — needs Contracts review"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: data.sources
+        condition: contains
+        value: client_provided
+
+  - slug: contracts.data_rights.cross_client_use
+    prompt: "Does the use of the data extend across multiple clients (e.g., training a model that benefits other clients)?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: data.sources
+        condition: contains
+        value: client_provided
+
+  - slug: contracts.data_rights.cic_status
+    prompt: "What is the CIC rollout status with this client?"
+    answer_type: single_select
+    options:
+      - {value: cic_v3_in_place, label: "CIC v3 in place"}
+      - {value: cic_v2_in_place, label: "CIC v2 in place (older clause)"}
+      - {value: cic_in_progress, label: "CIC roll-out in progress"}
+      - {value: no_cic, label: "No CIC in place"}
+      - {value: not_applicable, label: "Not applicable (not a CIC client)"}
+    required: false
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: contracts.data_rights.cross_client_use
+        condition: equals
+        value: true
+
+  - slug: contracts.data_rights.third_party_terms
+    prompt: "For third-party licensed data, what are the use restrictions?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: low
+    help_text: "E.g., field-of-use, geographic, no-AI-training, no-redistribution, named-user limits."
+    activates_when:
+      - parent_slug: data.sources
+        condition: contains
+        value: third_party_procured
+
+  - slug: contracts.data_rights.ai_training_permitted
+    prompt: "Is AI training / fine-tuning on this data permitted by the source contract?"
+    answer_type: single_select
+    options:
+      - {value: yes_explicit, label: "Yes — explicitly permitted"}
+      - {value: yes_implicit, label: "Yes — implicitly via broad use rights"}
+      - {value: no, label: "No — explicitly prohibited"}
+      - {value: silent, label: "Contract is silent — needs review"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Subcontracting and support access
+  # ─────────────────────────────────────────────────────
+
+  - slug: contracts.support.subprocessor_chain
+    prompt: "Are there subprocessors / support providers who will access the data?"
+    answer_type: text_long
+    required: false
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: data.classification.highest_tier
+        condition: in
+        values: [c3, c4]
+
+  - slug: contracts.support.client_consent_for_subprocessors
+    prompt: "Does the client contract permit the named subprocessors?"
+    answer_type: single_select
+    options:
+      - {value: yes_explicit, label: "Yes — explicitly named or pre-approved"}
+      - {value: yes_implicit, label: "Yes — implicit (general subprocessor permission)"}
+      - {value: no, label: "No — needs amendment"}
+      - {value: not_applicable, label: "Not applicable — no subprocessors"}
+    required: false
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: contracts.support.subprocessor_chain
+        condition: not_equals
+        value: ""
+
+  # ─────────────────────────────────────────────────────
+  # Engagement scope boundary
+  # ─────────────────────────────────────────────────────
+
+  - slug: contracts.scope.uses_within_sow_purpose
+    prompt: "Are all uses of client data within the original SOW / engagement purpose?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: data.sources
+        condition: contains
+        value: client_provided
+
+  # ─────────────────────────────────────────────────────
+  # NOTE: more questions to be added by Question Authors
+  # ─────────────────────────────────────────────────────
+  # Areas flagged for expansion:
+  # - Specific contract clause checklist (data ownership, IP assignment, audit rights, exit, indemnity)
+  # - Knowledge Sharing Agreement (KSA) governance
+  # - Software Assets in EY Network — explicit IP allocation rules
+  # - Vendor-supplied terms-of-service review (clickwrap risks)
+  # - Open-source contribution agreements (when EY contributes back)

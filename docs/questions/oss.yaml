@@ -1,0 +1,201 @@
+# Load when: working on Open Source Software review — components, licenses, MEND scanning, attribution, SBOM. Skip otherwise.
+
+section: oss
+description: |
+  Open Source Software review. Activates when software.uses_oss is true.
+  Covers component listing, license compatibility, copyleft exposure,
+  attribution, MEND scan results, EY OSS Whitelist alignment, and the
+  fast-lane vs full-review path. Reviewer engagement: Security Reviewer
+  (InfoSec validation), Independence Reviewer (Independence Framework
+  statements), Contracts (GCO license review).
+
+questions:
+
+  - slug: oss.components.list
+    prompt: "List the open source components used (name, version, license)."
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "Pre-populated from RepoFindings (package.json, requirements.txt, pom.xml, go.mod, etc.). Verify and complete."
+    activates_when:
+      - parent_slug: software.uses_oss
+        condition: equals
+        value: true
+
+  - slug: oss.components.includes_models
+    prompt: "Are open source AI / ML models among the components?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "E.g., HuggingFace models, Llama, Mistral, Stable Diffusion. Different review path applies."
+    activates_when:
+      - parent_slug: software.uses_oss
+        condition: equals
+        value: true
+
+  - slug: oss.components.distribution_model
+    prompt: "How is the OSS used in the asset?"
+    answer_type: single_select
+    options:
+      - {value: standalone_use, label: "Standalone use (EY uses the software internally; not distributed)"}
+      - {value: embedded_internal, label: "Embedded in EY-internal-only code"}
+      - {value: embedded_distributed, label: "Embedded in code distributed to clients"}
+      - {value: saas_to_clients, label: "Powering a SaaS service offered to clients"}
+      - {value: saas_consumed, label: "Consumed as a SaaS / hosted offering"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: software.uses_oss
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # License analysis
+  # ─────────────────────────────────────────────────────
+
+  - slug: oss.licenses.types_in_use
+    prompt: "Which OSS license types are present?"
+    answer_type: multi_select
+    options:
+      - {value: mit, label: "MIT"}
+      - {value: apache_2, label: "Apache 2.0"}
+      - {value: bsd, label: "BSD (2-clause / 3-clause)"}
+      - {value: lgpl, label: "LGPL"}
+      - {value: gpl_v2, label: "GPL v2"}
+      - {value: gpl_v3, label: "GPL v3"}
+      - {value: agpl, label: "AGPL"}
+      - {value: mpl, label: "MPL"}
+      - {value: cddl, label: "CDDL"}
+      - {value: creative_commons, label: "Creative Commons (with restrictions)"}
+      - {value: public_domain, label: "Public domain / Unlicense / CC0"}
+      - {value: custom, label: "Custom / non-standard license"}
+      - {value: unknown, label: "Unknown license (needs analysis)"}
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "Pre-populated from RepoFindings."
+    activates_when:
+      - parent_slug: software.uses_oss
+        condition: equals
+        value: true
+
+  - slug: oss.licenses.copyleft_exposure
+    prompt: "Is there any copyleft exposure (GPL, AGPL, MPL) in components that are embedded or distributed?"
+    answer_type: single_select
+    options:
+      - {value: no_exposure, label: "No exposure"}
+      - {value: weak_copyleft_only, label: "Weak copyleft only (LGPL, MPL — manageable)"}
+      - {value: strong_copyleft, label: "Strong copyleft present (GPL/AGPL — material risk)"}
+      - {value: unknown, label: "Unknown — needs analysis"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: software.uses_oss
+        condition: equals
+        value: true
+
+  - slug: oss.whitelist.aligned
+    prompt: "Are all components on the EY OSS Whitelist?"
+    answer_type: single_select
+    options:
+      - {value: all_whitelisted, label: "All on whitelist"}
+      - {value: most_whitelisted, label: "Most on whitelist; a few exceptions"}
+      - {value: many_off_whitelist, label: "Many off whitelist"}
+      - {value: not_yet_checked, label: "Not yet checked"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: software.uses_oss
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Scanning
+  # ─────────────────────────────────────────────────────
+
+  - slug: oss.scanning.mend_scan_status
+    prompt: "What is the MEND scan status?"
+    answer_type: single_select
+    options:
+      - {value: completed_clean, label: "Completed — no high/critical findings"}
+      - {value: completed_remediated, label: "Completed — findings remediated"}
+      - {value: completed_open, label: "Completed — open findings"}
+      - {value: in_progress, label: "In progress"}
+      - {value: not_started, label: "Not started"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: software.uses_oss
+        condition: equals
+        value: true
+
+  - slug: oss.scanning.vulnerabilities_open
+    prompt: "Summarize any open OSS vulnerability findings (CVE, severity, component, remediation plan)."
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: oss.scanning.mend_scan_status
+        condition: in
+        values: [completed_open, in_progress]
+
+  # ─────────────────────────────────────────────────────
+  # Independence Framework statements
+  # ─────────────────────────────────────────────────────
+
+  - slug: oss.independence.framework_statements_completed
+    prompt: "Have the required Independence Framework statements been completed for the OSS in use?"
+    answer_type: single_select
+    options:
+      - {value: completed, label: "Completed"}
+      - {value: in_progress, label: "In progress"}
+      - {value: not_required, label: "Not required (no audit-client deployment)"}
+      - {value: not_started, label: "Not started"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: software.uses_oss
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Attribution and SBOM
+  # ─────────────────────────────────────────────────────
+
+  - slug: oss.attribution.notices_published
+    prompt: "Are required attribution / NOTICE files published with the asset where required?"
+    answer_type: single_select
+    options:
+      - {value: published, label: "Published"}
+      - {value: planned, label: "Planned"}
+      - {value: not_required, label: "Not required (no distribution to clients)"}
+      - {value: not_done, label: "Not done"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: oss.components.distribution_model
+        condition: in
+        values: [embedded_distributed, saas_to_clients]
+
+  - slug: oss.sbom.published
+    prompt: "Is a Software Bill of Materials (SBOM) published?"
+    answer_type: single_select
+    options:
+      - {value: published, label: "Published"}
+      - {value: planned, label: "Planned"}
+      - {value: not_required, label: "Not required for this distribution model"}
+      - {value: not_done, label: "Not done"}
+    required: false
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: software.uses_oss
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # NOTE: more questions to be added by Question Authors
+  # ─────────────────────────────────────────────────────
+  # Areas flagged for expansion:
+  # - Per-license obligation checklist
+  # - Field-of-use restrictions in Creative Commons / specialty licenses
+  # - OSS contribution (if EY contributes back) — separate review path
+  # - License compatibility matrix for components used together

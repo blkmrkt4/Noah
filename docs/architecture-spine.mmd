@@ -1,0 +1,87 @@
+---
+title: ARC Architecture Spine — Four Parallel Lifecycles
+---
+%% Load when: reasoning about how the four streams (Ingestion / Questionnaire /
+%% Patterns / Review) interact. Useful when designing cross-stream features.
+%% Skip when working entirely within one stream.
+flowchart TB
+
+  subgraph S1["Stream 1 — Ingestion (objective)"]
+    direction TB
+    DOCS["Documents<br/>(PRDs, whitepapers, marketing)"]
+    REPO["GitHub repository<br/>(code, deps, schemas)"]
+    POL["Policy corpus<br/>(versioned PolicyDocs)"]
+    EXTR["DocExtractions<br/>(LLM summary + facts + citations)"]
+    FIND["RepoFindings<br/>(commit-pinned objective facts)"]
+    DOCS --> EXTR
+    REPO --> FIND
+  end
+
+  subgraph S2["Stream 2 — Questionnaire"]
+    direction TB
+    INTAKE["Foundational questions<br/>(intake.yaml)"]
+    TRIAGE["Triage / routing questions<br/>(triage.yaml)"]
+    SECTIONS["Section questions<br/>(privacy, ai, security,<br/>independence, brand, oss,<br/>nss, contracts, retention,<br/>bia, accessibility, service-lines)"]
+    PREPOP["AI pre-population<br/>(source=system_inferred)"]
+    ATTEST["Owner attestation<br/>(accept or edit)"]
+    INTAKE --> TRIAGE
+    TRIAGE --> SECTIONS
+    PREPOP --> ATTEST
+    ATTEST --> SECTIONS
+  end
+
+  subgraph S3["Stream 3 — Pattern matching"]
+    direction TB
+    PATTERNS["Published Patterns<br/>(versioned)"]
+    PMATCH["PatternMatch<br/>(continuous fit_score)"]
+    FASTTRACK["Fast-track determination<br/>(reviewer_waivers)"]
+    PATTERNS --> PMATCH
+    PMATCH --> FASTTRACK
+  end
+
+  subgraph S4["Stream 4 — Review"]
+    direction TB
+    SECREL["Section Release"]
+    PROJSUB["Project Submission"]
+    REVIEWS["Per-Reviewer Reviews<br/>(parallel)"]
+    CLAR["Clarifications<br/>(reopen Answer)"]
+    DISP["Dispositions<br/>(approve/conditional/reject)"]
+    SECREL --> REVIEWS
+    PROJSUB --> REVIEWS
+    REVIEWS --> CLAR
+    CLAR --> ATTEST
+    REVIEWS --> DISP
+  end
+
+  subgraph BOE["Body of Evidence (single artifact)"]
+    direction TB
+    ANSW["Attested Answers"]
+    EXTRREF["DocExtractions"]
+    FINDREF["RepoFindings"]
+    DISC["Discrepancies"]
+    THR["Threads"]
+  end
+
+  EXTR --> PREPOP
+  FIND --> PREPOP
+  POL --> PREPOP
+  ATTEST --> ANSW
+  EXTR --> EXTRREF
+  FIND --> FINDREF
+  ATTEST --> DISC
+  PREPOP --> DISC
+  REVIEWS --> THR
+  CLAR --> THR
+  ANSW --> PMATCH
+  ANSW --> REVIEWS
+  EXTRREF --> REVIEWS
+  FINDREF --> REVIEWS
+  DISC --> REVIEWS
+  FASTTRACK --> DISP
+
+  PROJSUB -.->|"pins"| POL
+
+  classDef stream fill:#000,stroke:#FFE600,stroke-width:2px,color:#FFF
+  classDef boe fill:#FFE600,stroke:#000,stroke-width:2px,color:#000
+  class S1,S2,S3,S4 stream
+  class BOE boe

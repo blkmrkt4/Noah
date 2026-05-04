@@ -1,0 +1,154 @@
+# Load when: working on data retention schedules, deletion mechanisms, log retention, legal hold, or decommissioning. Skip otherwise.
+
+section: retention
+description: |
+  Data retention and lifecycle. Activates for every project. Covers retention
+  schedule per data class, deletion ownership, log retention, legal hold
+  mechanism, and post-production lifecycle (patching, retraining, country
+  expansion, decommissioning). Reviewer engagement: Privacy Reviewer
+  (regulatory aspects), Security Reviewer (log retention security aspects).
+
+questions:
+
+  # ─────────────────────────────────────────────────────
+  # Retention schedule
+  # ─────────────────────────────────────────────────────
+
+  - slug: retention.schedule.client_data
+    prompt: "What is the retention period for client data?"
+    answer_type: text_short
+    required: true
+    ai_prepopulation_priority: low
+    help_text: "E.g., '7 years per audit retention requirement', 'Until end of engagement + 90 days', 'Per client contract'."
+    activates_when:
+      - parent_slug: data.types
+        condition: contains
+        value: client_information
+
+  - slug: retention.schedule.personal_data
+    prompt: "What is the retention period for personal data?"
+    answer_type: text_short
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: data.types
+        condition: contains
+        value: personal_data
+
+  - slug: retention.schedule.justification
+    prompt: "What is the legal / business justification for the retention period?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: low
+    help_text: "E.g., regulatory minimum, audit retention requirement, statute of limitations, contractual obligation."
+    activates_when:
+      - parent_slug: data.types
+        condition: contains
+        value: personal_data
+
+  - slug: retention.schedule.documented
+    prompt: "Is the retention schedule formally documented and accessible?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: low
+    activates_when: []
+
+  # ─────────────────────────────────────────────────────
+  # Deletion and archive ownership
+  # ─────────────────────────────────────────────────────
+
+  - slug: retention.deletion.owner
+    prompt: "Who owns the deletion / archive decision?"
+    answer_type: text_short
+    required: true
+    ai_prepopulation_priority: low
+    help_text: "Typically the IT application owner; sometimes shared with the business owner."
+    activates_when: []
+
+  - slug: retention.deletion.mechanism
+    prompt: "How is deletion executed?"
+    answer_type: single_select
+    options:
+      - {value: automated_scheduled, label: "Automated, scheduled"}
+      - {value: automated_event_driven, label: "Automated, event-driven (e.g., engagement closed)"}
+      - {value: manual_process, label: "Manual process"}
+      - {value: not_yet_designed, label: "Not yet designed"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when: []
+
+  - slug: retention.deletion.proof
+    prompt: "Is there an audit log of deletion / archival actions?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: data.classification.highest_tier
+        condition: in
+        values: [c3, c4]
+
+  # ─────────────────────────────────────────────────────
+  # Logs vs business data
+  # ─────────────────────────────────────────────────────
+
+  - slug: retention.logs.retention_period
+    prompt: "What is the retention period for application / audit logs?"
+    answer_type: text_short
+    required: true
+    ai_prepopulation_priority: low
+    help_text: "Often shorter than business data retention (e.g., 90 days, 1 year)."
+    activates_when: []
+
+  - slug: retention.logs.contains_personal_data
+    prompt: "Do logs contain personal data?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "If yes, log retention is subject to the same regulatory constraints as business data."
+    activates_when: []
+
+  # ─────────────────────────────────────────────────────
+  # Legal hold
+  # ─────────────────────────────────────────────────────
+
+  - slug: retention.legal_hold.mechanism
+    prompt: "Is there a mechanism to apply legal hold (suspending deletion for specific records)?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: data.classification.highest_tier
+        condition: in
+        values: [c3, c4]
+
+  # ─────────────────────────────────────────────────────
+  # Post-production lifecycle
+  # ─────────────────────────────────────────────────────
+
+  - slug: retention.lifecycle.decommissioning_plan
+    prompt: "Is there a documented decommissioning plan (what happens to data when the asset retires)?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: low
+    activates_when: []
+
+  - slug: retention.lifecycle.country_specific_rules
+    prompt: "Are there country-specific deletion / retention rules that differ from the global default?"
+    answer_type: text_long
+    required: false
+    ai_prepopulation_priority: low
+    help_text: "E.g., right-to-be-forgotten obligations under GDPR, data localization deletion timelines, sector-specific rules."
+    activates_when:
+      - parent_slug: jurisdictions.scope_type
+        condition: in
+        values: [multi_country, regional, global]
+
+  # ─────────────────────────────────────────────────────
+  # NOTE: more questions to be added by Question Authors
+  # ─────────────────────────────────────────────────────
+  # Areas flagged for expansion:
+  # - Per-data-element retention table (more granular than per-data-type)
+  # - Backup retention separate from primary
+  # - Disaster recovery copy retention
+  # - Cross-border deletion timing constraints
+  # - Encryption-key destruction as deletion proxy

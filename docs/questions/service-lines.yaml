@@ -1,0 +1,238 @@
+# Load when: working on service-line overlays — Tax, Assurance, Consulting, SaT, Sustainability, C&I-specific questions. Skip otherwise.
+
+section: service-lines
+description: |
+  Service-line overlays. Activates when service.target_service_lines is
+  populated. Each EY service line has overlay rules — regulatory,
+  professional, and operational requirements specific to its work — that
+  apply on top of the firm-wide review baseline. Reviewer engagement: in
+  V1, captured in the corpus but engagement with service-line CTOs flows
+  through Independence Reviewer and Privacy Reviewer escalation paths.
+  See `risk-domains.md` § Service-line overlays for the open question on
+  the service-line CTO engagement model.
+
+questions:
+
+  # ─────────────────────────────────────────────────────
+  # Assurance overlay
+  # ─────────────────────────────────────────────────────
+
+  - slug: service_lines.assurance.relevant
+    prompt: "Will the asset support audit, attest, or other assurance work?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: service.target_service_lines
+        condition: contains
+        value: assurance
+
+  - slug: service_lines.assurance.audit_workpapers
+    prompt: "Will the asset produce, store, or modify audit workpapers?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "If yes, requires Assurance Methodology and Quality engagement."
+    activates_when:
+      - parent_slug: service_lines.assurance.relevant
+        condition: equals
+        value: true
+
+  - slug: service_lines.assurance.regulatory_dependent
+    prompt: "Does the asset's output depend on regulatory frameworks (PCAOB, IAASB, FRC, AICPA)?"
+    answer_type: multi_select
+    options:
+      - {value: pcaob, label: "PCAOB (US public companies)"}
+      - {value: iaasb, label: "IAASB (international)"}
+      - {value: frc, label: "FRC (UK)"}
+      - {value: aicpa, label: "AICPA (US private)"}
+      - {value: other_regulator, label: "Other regulator"}
+      - {value: none, label: "None — non-regulated work"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: service_lines.assurance.relevant
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Tax overlay
+  # ─────────────────────────────────────────────────────
+
+  - slug: service_lines.tax.relevant
+    prompt: "Will the asset support tax compliance, advisory, or planning work?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: service.target_service_lines
+        condition: contains
+        value: tax
+
+  - slug: service_lines.tax.tax_advice_generation
+    prompt: "Does the asset generate or recommend tax advice / positions?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "Tax advice has specific professional standards and disclosure requirements."
+    activates_when:
+      - parent_slug: service_lines.tax.relevant
+        condition: equals
+        value: true
+
+  - slug: service_lines.tax.tax_filing_support
+    prompt: "Does the asset prepare or submit tax filings on behalf of clients?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: service_lines.tax.relevant
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Consulting overlay
+  # ─────────────────────────────────────────────────────
+
+  - slug: service_lines.consulting.relevant
+    prompt: "Will the asset support consulting engagements?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: service.target_service_lines
+        condition: contains
+        value: consulting
+
+  - slug: service_lines.consulting.deliverable_type
+    prompt: "What type of consulting deliverable will the asset support?"
+    answer_type: multi_select
+    options:
+      - {value: strategy, label: "Strategy / advisory"}
+      - {value: technology_implementation, label: "Technology implementation"}
+      - {value: managed_services, label: "Managed services / operate"}
+      - {value: cyber, label: "Cyber"}
+      - {value: risk_advisory, label: "Risk advisory"}
+      - {value: people_consulting, label: "People consulting"}
+      - {value: business_consulting, label: "Business consulting"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: service_lines.consulting.relevant
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # SaT overlay
+  # ─────────────────────────────────────────────────────
+
+  - slug: service_lines.sat.relevant
+    prompt: "Will the asset support Strategy and Transactions engagements?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: service.target_service_lines
+        condition: contains
+        value: sat
+
+  - slug: service_lines.sat.deal_lifecycle_stage
+    prompt: "Which deal lifecycle stage(s) does the asset support?"
+    answer_type: multi_select
+    options:
+      - {value: target_screening, label: "Target screening / sourcing"}
+      - {value: due_diligence, label: "Due diligence"}
+      - {value: deal_structuring, label: "Deal structuring / valuation"}
+      - {value: integration_separation, label: "Integration / separation"}
+      - {value: divestiture, label: "Divestiture"}
+      - {value: post_deal_optimization, label: "Post-deal value capture"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: service_lines.sat.relevant
+        condition: equals
+        value: true
+
+  - slug: service_lines.sat.confidential_deal_data
+    prompt: "Will the asset handle highly confidential deal data (target identities, deal terms, valuations)?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "C4 classification typically; specific need-to-know access controls required."
+    activates_when:
+      - parent_slug: service_lines.sat.relevant
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Sustainability overlay
+  # ─────────────────────────────────────────────────────
+
+  - slug: service_lines.sustainability.relevant
+    prompt: "Will the asset support sustainability / ESG work?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: service.target_service_lines
+        condition: contains
+        value: sustainability
+
+  - slug: service_lines.sustainability.regulatory_reporting
+    prompt: "Does the asset support regulated sustainability reporting (CSRD, ISSB, SEC climate, TCFD)?"
+    answer_type: multi_select
+    options:
+      - {value: csrd, label: "CSRD (EU)"}
+      - {value: issb, label: "ISSB / IFRS S1 / S2"}
+      - {value: sec_climate, label: "SEC climate disclosures (US)"}
+      - {value: tcfd, label: "TCFD"}
+      - {value: other, label: "Other"}
+      - {value: none, label: "None — non-regulated"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: service_lines.sustainability.relevant
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Clients & Industries overlay
+  # ─────────────────────────────────────────────────────
+
+  - slug: service_lines.clients_industries.relevant
+    prompt: "Will the asset support Clients & Industries (C&I) work?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: service.target_service_lines
+        condition: contains
+        value: clients_industries
+
+  - slug: service_lines.clients_industries.target_sectors
+    prompt: "Which industry sectors does the asset target?"
+    answer_type: multi_select
+    options:
+      - {value: financial_services, label: "Financial Services"}
+      - {value: technology_media_telecom, label: "Technology, Media & Telecom"}
+      - {value: consumer, label: "Consumer / Retail"}
+      - {value: industrial, label: "Industrial / Manufacturing"}
+      - {value: energy, label: "Energy / Resources"}
+      - {value: government, label: "Government / Public Sector"}
+      - {value: health_life_sciences, label: "Health / Life Sciences"}
+      - {value: cross_sector, label: "Cross-sector"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: service_lines.clients_industries.relevant
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # NOTE: more questions to be added by Question Authors
+  # ─────────────────────────────────────────────────────
+  # Areas flagged for expansion:
+  # - Per-service-line specific compliance and methodology questions
+  # - Cross-service-line conflict checks (e.g., asset shared between Audit and Consulting)
+  # - Service-line CTO sign-off mechanism
+  # - Sector-specific regulatory overlays (FS regulators, healthcare HIPAA, etc.)

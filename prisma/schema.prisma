@@ -1,0 +1,579 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum ProjectStatus {
+  drafting
+  submitted
+  in_review
+  disposed
+}
+
+enum ScopeType {
+  single_country
+  multi_country
+  global
+}
+
+enum SectionStateEnum {
+  drafting
+  released
+  under_review
+  cleared
+}
+
+enum AnswerType {
+  single_select
+  multi_select
+  boolean
+  text_short
+  text_long
+  number
+  date
+  entity_ref
+  entity_ref_multi
+  url
+}
+
+enum AnswerSource {
+  system_inferred
+  owner_attested
+  collaborator_supplied
+}
+
+enum DiscrepancySeverity {
+  low
+  medium
+  high
+  critical
+}
+
+enum DiscrepancyDisposition {
+  pending
+  acknowledged
+  warrants_followup
+  no_action
+}
+
+enum DelegationScopeType {
+  section
+  question_set
+}
+
+enum DelegationStatus {
+  pending
+  accepted
+  declined
+  revoked
+}
+
+enum ReviewDomain {
+  privacy
+  ai
+  independence
+  security
+  brand
+  accessibility
+  oss
+  nss
+  contracts
+  retention
+  bia
+  service_lines
+}
+
+enum ReviewStatus {
+  open
+  in_progress
+  disposed
+}
+
+enum ReviewDisposition {
+  approve
+  conditional
+  reject
+}
+
+enum ClarificationStatus {
+  open
+  responded
+  resolved
+}
+
+enum ThreadParentType {
+  answer
+  review
+  clarification
+  delegation
+}
+
+enum ThreadStatus {
+  open
+  closed
+}
+
+enum CommentAuthorKind {
+  user
+  system
+}
+
+enum JurisdictionTier {
+  high_regulation
+  standard
+  low_data
+}
+
+enum NotificationType {
+  digest
+  urgent
+}
+
+enum NotificationChannel {
+  in_app
+  email
+  push
+}
+
+enum AiPrepopulationPriority {
+  high
+  medium
+  low
+  none
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id          String   @id @default(uuid()) @db.Uuid
+  email       String   @unique
+  name        String
+  globalRoles Json?    @map("global_roles")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  ownedProjects  Project[]
+  delegationsAssigned Delegation[] @relation("DelegationAssigner")
+  delegationsReceived Delegation[] @relation("DelegationAssignee")
+  comments       Comment[]
+  notifications  Notification[]
+  reviewerRoles  Reviewer[]
+  attestedAnswers Answer[]
+  publishedQuestionVersions QuestionVersion[]
+
+  @@map("users")
+}
+
+model Jurisdiction {
+  id   String           @id @default(uuid()) @db.Uuid
+  code String           @unique
+  name String
+  tier JurisdictionTier
+
+  projectJurisdictions ProjectJurisdiction[]
+
+  @@map("jurisdictions")
+}
+
+model Project {
+  id               String        @id @default(uuid()) @db.Uuid
+  name             String
+  commercialOwnerId String       @map("commercial_owner_id") @db.Uuid
+  status           ProjectStatus @default(drafting)
+  scopeType        ScopeType     @map("scope_type")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  submittedAt      DateTime?     @map("submitted_at")
+
+  commercialOwner  User          @relation(fields: [commercialOwnerId], references: [id])
+  jurisdictions    ProjectJurisdiction[]
+  answers          Answer[]
+  documents        Document[]
+  repoFindings     RepoFinding[]
+  docExtractions   DocExtraction[]
+  discrepancies    Discrepancy[]
+  delegations      Delegation[]
+  reviews          Review[]
+  patternMatches   PatternMatch[]
+  sectionStates    SectionState[]
+  notifications    Notification[]
+  policySnapshots  PolicySnapshot[]
+
+  @@map("projects")
+}
+
+model ProjectJurisdiction {
+  projectId      String @map("project_id") @db.Uuid
+  jurisdictionId String @map("jurisdiction_id") @db.Uuid
+
+  project      Project      @relation(fields: [projectId], references: [id])
+  jurisdiction Jurisdiction @relation(fields: [jurisdictionId], references: [id])
+
+  @@id([projectId, jurisdictionId])
+  @@map("project_jurisdictions")
+}
+
+model Section {
+  id           String @id @default(uuid()) @db.Uuid
+  slug         String @unique
+  displayName  String @map("display_name")
+  displayOrder Int    @map("display_order")
+
+  questions     Question[]
+  sectionStates SectionState[]
+  reviews       Review[]
+
+  @@map("sections")
+}
+
+model SectionState {
+  id         String           @id @default(uuid()) @db.Uuid
+  projectId  String           @map("project_id") @db.Uuid
+  sectionId  String           @map("section_id") @db.Uuid
+  state      SectionStateEnum @default(drafting)
+  releasedAt DateTime?        @map("released_at")
+  clearedAt  DateTime?        @map("cleared_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+  section Section @relation(fields: [sectionId], references: [id])
+
+  @@unique([projectId, sectionId])
+  @@map("section_states")
+}
+
+model Question {
+  id        String   @id @default(uuid()) @db.Uuid
+  slug      String   @unique
+  sectionId String   @map("section_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  section  Section          @relation(fields: [sectionId], references: [id])
+  versions QuestionVersion[]
+
+  @@map("questions")
+}
+
+model QuestionVersion {
+  id          String     @id @default(uuid()) @db.Uuid
+  questionId  String     @map("question_id") @db.Uuid
+  version     Int
+  prompt      String
+  answerType  AnswerType @map("answer_type")
+  options     Json?
+  helpText    String?    @map("help_text")
+  examples    Json?
+  required    Boolean    @default(true)
+  aiPrepopulationPriority AiPrepopulationPriority @default(medium) @map("ai_prepopulation_priority")
+  routesToReviewDomains   Json?    @map("routes_to_review_domains")
+  publishedAt DateTime   @default(now()) @map("published_at")
+  publishedBy String?    @map("published_by") @db.Uuid
+
+  question    Question   @relation(fields: [questionId], references: [id])
+  publisher   User?      @relation(fields: [publishedBy], references: [id])
+  answers     Answer[]
+  parentDependencies  QuestionDependency[] @relation("DependencyChild")
+  childDependencies   QuestionDependency[] @relation("DependencyParent")
+
+  @@unique([questionId, version])
+  @@map("question_versions")
+}
+
+model QuestionDependency {
+  parentVersionId String @map("parent_version_id") @db.Uuid
+  childVersionId  String @map("child_version_id") @db.Uuid
+  activationRule  Json   @map("activation_rule")
+
+  parentVersion QuestionVersion @relation("DependencyParent", fields: [parentVersionId], references: [id])
+  childVersion  QuestionVersion @relation("DependencyChild", fields: [childVersionId], references: [id])
+
+  @@id([parentVersionId, childVersionId])
+  @@map("question_dependencies")
+}
+
+model Answer {
+  id                String       @id @default(uuid()) @db.Uuid
+  projectId         String       @map("project_id") @db.Uuid
+  questionVersionId String       @map("question_version_id") @db.Uuid
+  value             Json?
+  source            AnswerSource
+  aiConfidence      Float?       @map("ai_confidence")
+  citation          String?
+  attestedBy        String?      @map("attested_by") @db.Uuid
+  answeredAt        DateTime     @default(now()) @map("answered_at")
+  inClarification   Boolean      @default(false) @map("in_clarification")
+
+  project         Project         @relation(fields: [projectId], references: [id])
+  questionVersion QuestionVersion @relation(fields: [questionVersionId], references: [id])
+  attester        User?           @relation(fields: [attestedBy], references: [id])
+  discrepancies   Discrepancy[]
+  delegations     Delegation[]
+  threads         Thread[]
+  clarifications  Clarification[]
+
+  @@unique([projectId, questionVersionId])
+  @@map("answers")
+}
+
+model Document {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @map("project_id") @db.Uuid
+  filename  String
+  uri       String
+  mimeType  String   @map("mime_type")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  project      Project         @relation(fields: [projectId], references: [id])
+  extractions  DocExtraction[]
+
+  @@map("documents")
+}
+
+model DocExtraction {
+  id            String   @id @default(uuid()) @db.Uuid
+  documentId    String   @map("document_id") @db.Uuid
+  projectId     String   @map("project_id") @db.Uuid
+  summary       String
+  extractedFacts Json    @map("extracted_facts")
+  extractedAt   DateTime @default(now()) @map("extracted_at")
+
+  document Document @relation(fields: [documentId], references: [id])
+  project  Project  @relation(fields: [projectId], references: [id])
+
+  @@map("doc_extractions")
+}
+
+model RepoFinding {
+  id          String   @id @default(uuid()) @db.Uuid
+  projectId   String   @map("project_id") @db.Uuid
+  repoUrl     String   @map("repo_url")
+  commitSha   String   @map("commit_sha")
+  findingType String   @map("finding_type")
+  evidence    String
+  filePath    String?  @map("file_path")
+  lineNumber  Int?     @map("line_number")
+  foundAt     DateTime @default(now()) @map("found_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@map("repo_findings")
+}
+
+model Discrepancy {
+  id             String                  @id @default(uuid()) @db.Uuid
+  answerId       String                  @map("answer_id") @db.Uuid
+  projectId      String                  @map("project_id") @db.Uuid
+  ownerValue     Json                    @map("owner_value")
+  systemValue    Json                    @map("system_value")
+  sourceCitation String?                 @map("source_citation")
+  severity       DiscrepancySeverity
+  disposition    DiscrepancyDisposition  @default(pending)
+  loggedAt       DateTime                @default(now()) @map("logged_at")
+
+  answer  Answer  @relation(fields: [answerId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@map("discrepancies")
+}
+
+model Delegation {
+  id                String              @id @default(uuid()) @db.Uuid
+  projectId         String              @map("project_id") @db.Uuid
+  answerId          String?             @map("answer_id") @db.Uuid
+  scopeType         DelegationScopeType @map("scope_type")
+  scopeTarget       Json                @map("scope_target")
+  assignerId        String              @map("assigner_id") @db.Uuid
+  assigneeId        String              @map("assignee_id") @db.Uuid
+  delegateAuthority Boolean             @default(false) @map("delegate_authority")
+  status            DelegationStatus    @default(pending)
+  message           String?
+  createdAt         DateTime            @default(now()) @map("created_at")
+
+  project  Project @relation(fields: [projectId], references: [id])
+  answer   Answer? @relation(fields: [answerId], references: [id])
+  assigner User    @relation("DelegationAssigner", fields: [assignerId], references: [id])
+  assignee User    @relation("DelegationAssignee", fields: [assigneeId], references: [id])
+  threads  Thread[]
+
+  @@map("delegations")
+}
+
+model Pattern {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String
+
+  versions PatternVersion[]
+
+  @@map("patterns")
+}
+
+model PatternVersion {
+  id                String   @id @default(uuid()) @db.Uuid
+  patternId         String   @map("pattern_id") @db.Uuid
+  version           Int
+  criteria          Json
+  jurisdictionScope Json?    @map("jurisdiction_scope")
+  reviewerWaivers   Json?    @map("reviewer_waivers")
+  publishedAt       DateTime @default(now()) @map("published_at")
+
+  pattern  Pattern        @relation(fields: [patternId], references: [id])
+  matches  PatternMatch[]
+
+  @@unique([patternId, version])
+  @@map("pattern_versions")
+}
+
+model PatternMatch {
+  id               String   @id @default(uuid()) @db.Uuid
+  projectId        String   @map("project_id") @db.Uuid
+  patternVersionId String   @map("pattern_version_id") @db.Uuid
+  fitScore         Float    @map("fit_score")
+  missingCriteria  Json?    @map("missing_criteria")
+  lastEvaluated    DateTime @default(now()) @map("last_evaluated")
+
+  project        Project        @relation(fields: [projectId], references: [id])
+  patternVersion PatternVersion @relation(fields: [patternVersionId], references: [id])
+
+  @@unique([projectId, patternVersionId])
+  @@map("pattern_matches")
+}
+
+model Reviewer {
+  id            String       @id @default(uuid()) @db.Uuid
+  userId        String       @map("user_id") @db.Uuid
+  domain        ReviewDomain
+  jurisdictions Json?
+
+  user    User     @relation(fields: [userId], references: [id])
+  reviews Review[]
+
+  @@map("reviewers")
+}
+
+model Review {
+  id               String           @id @default(uuid()) @db.Uuid
+  projectId        String           @map("project_id") @db.Uuid
+  sectionId        String?          @map("section_id") @db.Uuid
+  reviewerId       String           @map("reviewer_id") @db.Uuid
+  domain           ReviewDomain
+  status           ReviewStatus     @default(open)
+  disposition      ReviewDisposition?
+  dispositionNotes String?          @map("disposition_notes")
+  openedAt         DateTime         @default(now()) @map("opened_at")
+  closedAt         DateTime?        @map("closed_at")
+
+  project        Project         @relation(fields: [projectId], references: [id])
+  section        Section?        @relation(fields: [sectionId], references: [id])
+  reviewer       Reviewer        @relation(fields: [reviewerId], references: [id])
+  clarifications Clarification[]
+  threads        Thread[]
+
+  @@map("reviews")
+}
+
+model Clarification {
+  id         String              @id @default(uuid()) @db.Uuid
+  reviewId   String              @map("review_id") @db.Uuid
+  answerId   String              @map("answer_id") @db.Uuid
+  status     ClarificationStatus @default(open)
+  openedAt   DateTime            @default(now()) @map("opened_at")
+  resolvedAt DateTime?           @map("resolved_at")
+
+  review  Review   @relation(fields: [reviewId], references: [id])
+  answer  Answer   @relation(fields: [answerId], references: [id])
+  threads Thread[]
+
+  @@map("clarifications")
+}
+
+model Thread {
+  id         String           @id @default(uuid()) @db.Uuid
+  parentType ThreadParentType @map("parent_type")
+  status     ThreadStatus     @default(open)
+
+  // Polymorphic parent - only one will be set
+  answerId        String? @map("answer_id") @db.Uuid
+  reviewId        String? @map("review_id") @db.Uuid
+  clarificationId String? @map("clarification_id") @db.Uuid
+  delegationId    String? @map("delegation_id") @db.Uuid
+
+  answer        Answer?        @relation(fields: [answerId], references: [id])
+  review        Review?        @relation(fields: [reviewId], references: [id])
+  clarification Clarification? @relation(fields: [clarificationId], references: [id])
+  delegation    Delegation?    @relation(fields: [delegationId], references: [id])
+  comments      Comment[]
+
+  @@map("threads")
+}
+
+model Comment {
+  id         String            @id @default(uuid()) @db.Uuid
+  threadId   String            @map("thread_id") @db.Uuid
+  authorId   String            @map("author_id") @db.Uuid
+  authorKind CommentAuthorKind @map("author_kind")
+  body       String
+  createdAt  DateTime          @default(now()) @map("created_at")
+
+  thread Thread @relation(fields: [threadId], references: [id])
+  author User   @relation(fields: [authorId], references: [id])
+
+  @@map("comments")
+}
+
+model Notification {
+  id            String              @id @default(uuid()) @db.Uuid
+  userId        String              @map("user_id") @db.Uuid
+  projectId     String?             @map("project_id") @db.Uuid
+  type          NotificationType
+  digestPayload Json?               @map("digest_payload")
+  channel       NotificationChannel
+  deliveredAt   DateTime?           @map("delivered_at")
+  readAt        DateTime?           @map("read_at")
+
+  user    User     @relation(fields: [userId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id])
+
+  @@map("notifications")
+}
+
+model PolicyDoc {
+  id                String @id @default(uuid()) @db.Uuid
+  title             String
+  domain            ReviewDomain
+  jurisdictionScope Json?  @map("jurisdiction_scope")
+
+  versions PolicyVersion[]
+
+  @@map("policy_docs")
+}
+
+model PolicyVersion {
+  id          String   @id @default(uuid()) @db.Uuid
+  policyDocId String   @map("policy_doc_id") @db.Uuid
+  version     Int
+  content     String
+  effectiveAt DateTime @map("effective_at")
+
+  policyDoc PolicyDoc        @relation(fields: [policyDocId], references: [id])
+  snapshots PolicySnapshot[]
+
+  @@unique([policyDocId, version])
+  @@map("policy_versions")
+}
+
+model PolicySnapshot {
+  id              String   @id @default(uuid()) @db.Uuid
+  projectId       String   @map("project_id") @db.Uuid
+  policyVersionId String   @map("policy_version_id") @db.Uuid
+  pinnedAt        DateTime @default(now()) @map("pinned_at")
+
+  project       Project       @relation(fields: [projectId], references: [id])
+  policyVersion PolicyVersion @relation(fields: [policyVersionId], references: [id])
+
+  @@unique([projectId, policyVersionId])
+  @@map("policy_snapshots")
+}

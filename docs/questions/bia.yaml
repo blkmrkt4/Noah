@@ -1,0 +1,149 @@
+# Load when: working on Business Impact Assessment — criticality tiers, RTO/RPO, continuity, failover. Skip otherwise.
+
+section: bia
+description: |
+  Business Impact Assessment. Activates when triage.bia_required is true
+  (generally true for any production-deployed asset). Covers business
+  criticality, recovery time and recovery point objectives, and continuity
+  planning. Reviewer domain: in V1 routed via Security Reviewer; see
+  `risk-domains.md` § BIA for the open question on whether to introduce a
+  dedicated BIA Reviewer type.
+
+questions:
+
+  # ─────────────────────────────────────────────────────
+  # Criticality
+  # ─────────────────────────────────────────────────────
+
+  - slug: bia.criticality.tier
+    prompt: "What is the business criticality tier?"
+    answer_type: single_select
+    options:
+      - {value: tier_1, label: "Tier 1 — mission-critical (firm-wide impact if down)"}
+      - {value: tier_2, label: "Tier 2 — high (significant business impact if down)"}
+      - {value: tier_3, label: "Tier 3 — medium (manageable impact)"}
+      - {value: tier_4, label: "Tier 4 — low (minimal impact)"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: triage.bia_required
+        condition: equals
+        value: true
+
+  - slug: bia.criticality.user_count
+    prompt: "Approximately how many users will rely on the asset (when in production)?"
+    answer_type: text_short
+    required: true
+    ai_prepopulation_priority: low
+    help_text: "Order of magnitude is fine (e.g., '~50 internal users', '~5000 client users', 'Unknown / public')."
+    activates_when:
+      - parent_slug: triage.bia_required
+        condition: equals
+        value: true
+
+  - slug: bia.criticality.financial_impact
+    prompt: "What is the estimated financial impact of an extended outage?"
+    answer_type: single_select
+    options:
+      - {value: minimal, label: "Minimal (< $10K/day equivalent)"}
+      - {value: moderate, label: "Moderate ($10K–$100K/day)"}
+      - {value: high, label: "High ($100K–$1M/day)"}
+      - {value: severe, label: "Severe (> $1M/day)"}
+      - {value: not_estimated, label: "Not estimated"}
+    required: false
+    ai_prepopulation_priority: none
+    activates_when:
+      - parent_slug: bia.criticality.tier
+        condition: in
+        values: [tier_1, tier_2]
+
+  # ─────────────────────────────────────────────────────
+  # Recovery objectives
+  # ─────────────────────────────────────────────────────
+
+  - slug: bia.recovery.rto
+    prompt: "What is the Recovery Time Objective (RTO)?"
+    answer_type: single_select
+    options:
+      - {value: rto_under_1h, label: "Under 1 hour"}
+      - {value: rto_1_4h, label: "1–4 hours"}
+      - {value: rto_4_24h, label: "4–24 hours"}
+      - {value: rto_1_3d, label: "1–3 days"}
+      - {value: rto_over_3d, label: "Over 3 days"}
+      - {value: not_set, label: "Not set"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: triage.bia_required
+        condition: equals
+        value: true
+
+  - slug: bia.recovery.rpo
+    prompt: "What is the Recovery Point Objective (RPO)?"
+    answer_type: single_select
+    options:
+      - {value: rpo_zero, label: "Zero data loss"}
+      - {value: rpo_under_1h, label: "Under 1 hour"}
+      - {value: rpo_1_24h, label: "1–24 hours"}
+      - {value: rpo_over_24h, label: "Over 24 hours"}
+      - {value: not_set, label: "Not set"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: triage.bia_required
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Continuity
+  # ─────────────────────────────────────────────────────
+
+  - slug: bia.continuity.plan_status
+    prompt: "What is the business continuity plan status?"
+    answer_type: single_select
+    options:
+      - {value: documented_tested, label: "Documented and tested"}
+      - {value: documented_untested, label: "Documented, not yet tested"}
+      - {value: in_progress, label: "In progress"}
+      - {value: not_required, label: "Not required (low criticality)"}
+      - {value: not_started, label: "Not started"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: triage.bia_required
+        condition: equals
+        value: true
+
+  - slug: bia.continuity.failover_capability
+    prompt: "Does the asset support failover (geographic or zone-level)?"
+    answer_type: single_select
+    options:
+      - {value: active_active, label: "Active-active (auto-failover)"}
+      - {value: active_passive, label: "Active-passive (manual or scripted failover)"}
+      - {value: cold_dr, label: "Cold DR (rebuild from backup)"}
+      - {value: no_dr, label: "No DR"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: bia.criticality.tier
+        condition: in
+        values: [tier_1, tier_2]
+
+  - slug: bia.continuity.last_dr_test
+    prompt: "When was the last DR / continuity test?"
+    answer_type: text_short
+    required: false
+    ai_prepopulation_priority: none
+    activates_when:
+      - parent_slug: bia.continuity.plan_status
+        condition: equals
+        value: documented_tested
+
+  # ─────────────────────────────────────────────────────
+  # NOTE: more questions to be added by Question Authors
+  # ─────────────────────────────────────────────────────
+  # Areas flagged for expansion:
+  # - Per-region availability requirements
+  # - Dependency mapping (upstream / downstream system criticality)
+  # - Maintenance window expectations
+  # - Communication plan during outages

@@ -1,0 +1,86 @@
+# ARC Section Registry
+# Load when: building or modifying the corpus loader, or working on section routing.
+# Each entry becomes a Section row in the database.
+
+sections:
+  - slug: intake
+    display_name: "Intake & Foundations"
+    display_order: 1
+    description: "Foundational questions every project answers. Entry points to the dependency DAG."
+
+  - slug: triage
+    display_name: "Triage & Routing"
+    display_order: 2
+    description: "Routing questions that determine which downstream sections activate."
+
+  - slug: privacy
+    display_name: "Privacy & Data Protection"
+    display_order: 3
+    description: "PIA, DPIA, cross-border transfers, data retention, subject rights."
+    review_domain: privacy
+
+  - slug: ai
+    display_name: "AI / ML"
+    display_order: 4
+    description: "AIRA, AIQRM, DSO data risk, agent governance, third-party model risk."
+    review_domain: ai
+
+  - slug: independence
+    display_name: "Independence"
+    display_order: 5
+    description: "Audit-client permissibility, BRIDGE, own-work, SORT."
+    review_domain: independence
+
+  - slug: security
+    display_name: "Security"
+    display_order: 6
+    description: "InfoSec assessment, security certification, SRA, AI InfoSec."
+    review_domain: security
+
+  - slug: brand
+    display_name: "Brand & Reputation"
+    display_order: 7
+    description: "Brand risk, naming, marketing, UX, Motif Design System compliance."
+    review_domain: brand
+
+  - slug: accessibility
+    display_name: "Accessibility"
+    display_order: 8
+    description: "WCAG 2.1 AA compliance, accessibility testing."
+    review_domain: accessibility
+
+  - slug: oss
+    display_name: "Open Source Software"
+    display_order: 9
+    description: "OSS license compliance, copyleft risk, dependency audit."
+    review_domain: oss
+
+  - slug: nss
+    display_name: "Non-Standard Software"
+    display_order: 10
+    description: "NSS approval, standard route exceptions."
+    review_domain: nss
+
+  - slug: contracts
+    display_name: "Contracts & IP"
+    display_order: 11
+    description: "IP ownership, data rights, vendor contracts, CIC."
+    review_domain: contracts
+
+  - slug: retention
+    display_name: "Data Retention"
+    display_order: 12
+    description: "Data retention periods, log retention, deletion policies."
+    review_domain: retention
+
+  - slug: bia
+    display_name: "Business Impact Assessment"
+    display_order: 13
+    description: "BIA, business continuity, disaster recovery."
+    review_domain: bia
+
+  - slug: service-lines
+    display_name: "Service Line Overlays"
+    display_order: 14
+    description: "Service-line-specific requirements (Tax, Assurance, Consulting, SaT)."
+    review_domain: service_lines

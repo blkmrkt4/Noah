@@ -1,0 +1,210 @@
+# Load when: working on routing, section activation, fast-track determination, or reviewer assignment.
+
+section: triage
+description: |
+  Triage questions sit between the foundational intake and the deep section
+  questions. Their job is to determine which sections activate and which path
+  through each section to take (e.g., OSS fast-lane vs full review, DSO green-
+  lane vs yellow-lane). Many of these are computed by the system rather than
+  asked of the user, but they are modeled here so the activation logic is
+  explicit and traceable.
+
+questions:
+
+  # ─────────────────────────────────────────────────────
+  # Section activation — explicit triage
+  # ─────────────────────────────────────────────────────
+
+  - slug: triage.privacy_required
+    prompt: "Is a Privacy / PIA review required?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "Auto-set to true if data.types includes personal_data or client_information, or data.classification.highest_tier is C3/C4. The user can override only with reviewer concurrence."
+    activates_when:
+      - condition: any_of
+        conditions:
+          - parent_slug: data.types
+            condition: contains
+            value: personal_data
+          - parent_slug: data.types
+            condition: contains
+            value: client_information
+          - parent_slug: data.classification.highest_tier
+            condition: in
+            values: [c3, c4]
+
+  - slug: triage.aira_required
+    prompt: "Is an AIRA (AI Risk Assessment) required?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "Auto-set to true when ai.exists is true. AIRA is the upstream AI classification step."
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  - slug: triage.aiqrm_required
+    prompt: "Is AIQRM (AI Quality Risk Management) required?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "Generally yes when AIRA is required. Some low-risk AI on approved platforms qualifies for green-lane AIQRM."
+    activates_when:
+      - parent_slug: triage.aira_required
+        condition: equals
+        value: true
+
+  - slug: triage.dso_lane
+    prompt: "DSO data-risk lane?"
+    answer_type: single_select
+    options:
+      - {value: green, label: "Green — meets all green-lane criteria (synthetic / IP-free public / SOW-bound client data with consent)"}
+      - {value: yellow, label: "Yellow — does not meet green-lane criteria; full data-risk review needed"}
+      - {value: not_applicable, label: "Not applicable — no AI"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when:
+      - parent_slug: triage.aira_required
+        condition: equals
+        value: true
+
+  - slug: triage.independence_required
+    prompt: "Is an Independence review required?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "Auto-set to true if client.is_audit_client, vendor.has_third_party_relationship, or service.touches_financial_systems is true."
+    activates_when:
+      - condition: any_of
+        conditions:
+          - parent_slug: client.is_audit_client
+            condition: equals
+            value: true
+          - parent_slug: vendor.has_third_party_relationship
+            condition: equals
+            value: true
+          - parent_slug: service.touches_financial_systems
+            condition: equals
+            value: true
+
+  - slug: triage.bridge_required
+    prompt: "Is a BRIDGE evaluation required for the third-party relationship?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: vendor.has_third_party_relationship
+        condition: equals
+        value: true
+
+  - slug: triage.oss_path
+    prompt: "OSS review path?"
+    answer_type: single_select
+    options:
+      - {value: fast_lane, label: "Fast-lane — all licenses pre-approved, components on whitelist, standalone"}
+      - {value: standard, label: "Standard — full OSS review needed"}
+      - {value: not_applicable, label: "Not applicable — no OSS"}
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "The repo scan and license analysis will pre-populate this."
+    activates_when:
+      - parent_slug: software.uses_oss
+        condition: equals
+        value: true
+
+  - slug: triage.nss_path
+    prompt: "NSS review path?"
+    answer_type: single_select
+    options:
+      - {value: ey_licensed, label: "EY-licensed — full Security Consulting + GCO + BRIDGE + Data Protection chain"}
+      - {value: client_licensed, label: "Client-licensed — abbreviated review"}
+      - {value: third_party_licensed, label: "Third-party licensed — abbreviated review"}
+      - {value: not_applicable, label: "Not applicable — no NSS"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: software.is_non_standard
+        condition: equals
+        value: true
+
+  - slug: triage.brand_path
+    prompt: "Brand review path?"
+    answer_type: single_select
+    options:
+      - {value: streamlined, label: "Streamlined — internal-only, low-visibility, single-client app, or third-party SaaS with limited UI configurability"}
+      - {value: standard, label: "Standard — public-facing or multi-client product"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: triage.accessibility_required
+    prompt: "Is an accessibility review required?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "Auto-set to true when audience includes external_clients, client_end_customers, or public."
+    activates_when:
+      - condition: any_of
+        conditions:
+          - parent_slug: audience.types
+            condition: contains
+            value: external_clients
+          - parent_slug: audience.types
+            condition: contains
+            value: client_end_customers
+          - parent_slug: audience.types
+            condition: contains
+            value: public
+
+  - slug: triage.bia_required
+    prompt: "Is a BIA (Business Impact Assessment) required?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "Generally true for any production-deployed asset. Internal POCs and PoCs can be exempt."
+    activates_when: []
+
+  - slug: triage.contracts_review_required
+    prompt: "Is a Contracts / IP review required?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "Auto-set to true if software.created_with_external_party, data.sources includes client_provided or third_party_procured, or any vendor relationship exists."
+    activates_when:
+      - condition: any_of
+        conditions:
+          - parent_slug: software.created_with_external_party
+            condition: equals
+            value: true
+          - parent_slug: data.sources
+            condition: contains
+            value: client_provided
+          - parent_slug: data.sources
+            condition: contains
+            value: third_party_procured
+          - parent_slug: vendor.has_third_party_relationship
+            condition: equals
+            value: true
+
+  # ─────────────────────────────────────────────────────
+  # Routing meta — for reviewer assignment
+  # ─────────────────────────────────────────────────────
+
+  - slug: triage.applicable_jurisdictional_reviewers
+    prompt: "Which Jurisdictional Reviewers will review this project?"
+    answer_type: entity_ref_multi
+    validation: {entity_type: Jurisdiction}
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "Computed from jurisdictions.target_countries plus jurisdictions.hosting_countries plus jurisdictions.support_countries (deduplicated)."
+    activates_when: []
+
+  - slug: triage.fast_track_eligible
+    prompt: "Is the project currently eligible for fast-track via a Pattern match?"
+    answer_type: boolean
+    required: false
+    ai_prepopulation_priority: high
+    help_text: "Computed continuously. If true, the matching Pattern's reviewer_waivers will apply at Project Submission."
+    activates_when: []

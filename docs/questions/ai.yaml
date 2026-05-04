@@ -1,0 +1,396 @@
+# Load when: working on AI features — AIRA classification, AIQRM validation, DSO data risk, agent governance, third-party model handling. Skip otherwise.
+
+section: ai
+description: |
+  AI risk assessment and quality risk management. Activates when ai.exists is
+  true. Covers AIRA classification (lifecycle stage, regulatory tier, role,
+  business impact, complexity), AIQRM (validation, monitoring, periodic review,
+  action items), DSO data risk (green / yellow lane), agent governance, and
+  third-party model considerations. Reviewer domains: routes via Privacy
+  (DSO data risk), Security (InfoSec AI Assessment), and the AI-specific
+  review path under EY's AIRA/AIQRM model. See `risk-domains.md` § AI for the
+  open question on whether AI should become its own Reviewer type.
+
+questions:
+
+  # ─────────────────────────────────────────────────────
+  # AIRA — classification
+  # ─────────────────────────────────────────────────────
+
+  - slug: ai.aira.use_case
+    prompt: "What is the AI use case in 2–3 sentences?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: high
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  - slug: ai.aira.system_type
+    prompt: "What kind of AI is involved?"
+    answer_type: single_select
+    options:
+      - {value: knowledge_assistant, label: "Knowledge assistant (chat / Q&A on documents)"}
+      - {value: summarization, label: "Summarization"}
+      - {value: classification, label: "Classification / scoring"}
+      - {value: recommendation, label: "Recommendation / ranking"}
+      - {value: generative, label: "Generative (text / image / code)"}
+      - {value: workflow_automation, label: "Workflow automation"}
+      - {value: autonomous_agent, label: "Autonomous agent (single)"}
+      - {value: multi_agent, label: "Multi-agent system"}
+      - {value: model_finetuning, label: "Model fine-tuning / training"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  - slug: ai.aira.lifecycle_stage
+    prompt: "What lifecycle stage is the AI system in?"
+    answer_type: single_select
+    options:
+      - {value: design, label: "Design"}
+      - {value: validation, label: "Validation"}
+      - {value: deployment, label: "Deployment"}
+      - {value: monitoring, label: "Monitoring (live in production)"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  - slug: ai.aira.regulatory_tier
+    prompt: "What regulatory tier does the AI system map to under the EU AI Act?"
+    answer_type: single_select
+    options:
+      - {value: unacceptable, label: "Unacceptable risk (prohibited)"}
+      - {value: high, label: "High risk"}
+      - {value: limited, label: "Limited risk"}
+      - {value: minimal, label: "Minimal risk"}
+      - {value: gpai, label: "General-Purpose AI (GPAI) system / model"}
+      - {value: unsure, label: "Unsure — flag for AI Reviewer"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  - slug: ai.aira.role
+    prompt: "What is EY's role with respect to this AI system?"
+    answer_type: single_select
+    options:
+      - {value: provider, label: "Provider (EY developed or substantially modified the AI system)"}
+      - {value: deployer, label: "Deployer (EY uses an AI system developed by another)"}
+      - {value: both, label: "Both provider and deployer"}
+      - {value: other, label: "Other"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  - slug: ai.aira.is_inhouse_or_third_party
+    prompt: "Is the AI system in-house, third-party, or a combination?"
+    answer_type: single_select
+    options:
+      - {value: inhouse, label: "In-house (built by EY)"}
+      - {value: third_party, label: "Third-party (e.g., OpenAI, Anthropic, Azure OpenAI, AWS Bedrock)"}
+      - {value: combination, label: "Combination (third-party model with in-house fine-tuning or wrapper)"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  - slug: ai.aira.third_party_provider
+    prompt: "Which third-party provider(s)?"
+    answer_type: text_short
+    required: true
+    ai_prepopulation_priority: high
+    activates_when:
+      - parent_slug: ai.aira.is_inhouse_or_third_party
+        condition: in
+        values: [third_party, combination]
+
+  - slug: ai.aira.high_consequence_domain
+    prompt: "Does the AI operate in a high-consequence domain?"
+    answer_type: multi_select
+    options:
+      - {value: employment, label: "Employment (hiring, performance management, monitoring)"}
+      - {value: education, label: "Education / educational outcomes"}
+      - {value: financial, label: "Financial decisions about individuals"}
+      - {value: healthcare, label: "Healthcare / medical decisions"}
+      - {value: essential_services, label: "Essential services (utilities, public services)"}
+      - {value: identity_biometric, label: "Identity / biometric workflows"}
+      - {value: law_enforcement, label: "Law enforcement adjacent"}
+      - {value: credit_insurance, label: "Credit / insurance"}
+      - {value: none, label: "None of the above"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  - slug: ai.aira.makes_decisions_about_individuals
+    prompt: "Does the AI make or materially influence decisions about identifiable individuals?"
+    answer_type: single_select
+    options:
+      - {value: makes_decisions, label: "Yes — makes decisions automatically"}
+      - {value: assists_decisions, label: "Yes — provides input that materially influences decisions"}
+      - {value: drafts_only, label: "No — generates drafts for human review only"}
+      - {value: no_decisions, label: "No — does not relate to individual decisions"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  - slug: ai.aira.autonomy_level
+    prompt: "What is the autonomy level of the AI system / agent?"
+    answer_type: single_select
+    options:
+      - {value: human_in_the_loop, label: "Human-in-the-loop (every action approved)"}
+      - {value: human_on_the_loop, label: "Human-on-the-loop (oversight, can intervene)"}
+      - {value: human_out_of_the_loop, label: "Human-out-of-the-loop (autonomous)"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: ai.aira.system_type
+        condition: in
+        values: [autonomous_agent, multi_agent, workflow_automation]
+
+  # ─────────────────────────────────────────────────────
+  # DSO data risk — green-lane / yellow-lane criteria
+  # ─────────────────────────────────────────────────────
+
+  - slug: ai.dso.data_in_use
+    prompt: "What categories of data does the AI use (testing, grounding, prompts, training, output context)?"
+    answer_type: multi_select
+    options:
+      - {value: synthetic, label: "Synthetic / artificial data"}
+      - {value: ip_free_public, label: "IP-free / public-domain data"}
+      - {value: licensed_third_party, label: "Licensed third-party data (EY-approved source)"}
+      - {value: client_with_consent, label: "Client data with documented consent / CIC"}
+      - {value: client_under_sow, label: "Client data within SOW / engagement scope"}
+      - {value: c1_only, label: "C1 data only"}
+      - {value: c2_ey_policy_approved, label: "C2 EY policy data approved by Global Policy team"}
+      - {value: c3_client, label: "C3 / client data (broader use)"}
+      - {value: c4, label: "C4 / highly confidential client"}
+      - {value: personal_data_beyond_logging, label: "Personal data beyond auth/logging"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  - slug: ai.dso.cross_client_sharing
+    prompt: "Will any data be shared across clients for AI development?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  - slug: ai.dso.web_scraping
+    prompt: "Does the AI rely on web scraping tools (e.g., grounding with Bing, agent web tools)?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  - slug: ai.dso.client_data_outside_engagement
+    prompt: "Will client data be used for profiling, analysis, or insight generation outside the original engagement contract?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: ai.dso.data_in_use
+        condition: any_of
+        conditions:
+          - parent_slug: ai.dso.data_in_use
+            condition: contains
+            value: client_with_consent
+          - parent_slug: ai.dso.data_in_use
+            condition: contains
+            value: client_under_sow
+          - parent_slug: ai.dso.data_in_use
+            condition: contains
+            value: c3_client
+          - parent_slug: ai.dso.data_in_use
+            condition: contains
+            value: c4
+
+  - slug: ai.dso.environment
+    prompt: "Is the request for non-production (dev / test / PoC) or production?"
+    answer_type: single_select
+    options:
+      - {value: non_production, label: "Non-production (dev / test / PoC)"}
+      - {value: production, label: "Production"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Agent-specific
+  # ─────────────────────────────────────────────────────
+
+  - slug: ai.agent.deployment_audience
+    prompt: "Who can use the agent?"
+    answer_type: single_select
+    options:
+      - {value: ey_select_users, label: "Select EY users only"}
+      - {value: ey_internal, label: "All EY internal"}
+      - {value: single_client, label: "Single client (named)"}
+      - {value: multi_client, label: "Multiple clients"}
+      - {value: public, label: "Public / external"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when:
+      - parent_slug: ai.aira.system_type
+        condition: in
+        values: [autonomous_agent, multi_agent]
+
+  - slug: ai.agent.platform
+    prompt: "On which platform is the agent running?"
+    answer_type: single_select
+    options:
+      - {value: ey_approved_platform, label: "EY-approved AI platform (e.g., EY Fabric AI)"}
+      - {value: copilot_native, label: "Microsoft Copilot platform-native agent"}
+      - {value: bespoke_ey, label: "Bespoke EY-built platform"}
+      - {value: third_party_platform, label: "Third-party platform"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when:
+      - parent_slug: ai.aira.system_type
+        condition: in
+        values: [autonomous_agent, multi_agent]
+
+  - slug: ai.agent.reuse_across_clients
+    prompt: "Will the agent be re-used for another client without permission from the original client?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: ai.aira.system_type
+        condition: in
+        values: [autonomous_agent, multi_agent]
+
+  # ─────────────────────────────────────────────────────
+  # AIQRM — validation, monitoring, action items
+  # ─────────────────────────────────────────────────────
+
+  - slug: ai.aiqrm.testing_evidence
+    prompt: "What testing evidence exists for the AI system?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "Describe accuracy testing, hallucination testing, bias testing, edge case testing, red-teaming, etc."
+    activates_when:
+      - parent_slug: triage.aiqrm_required
+        condition: equals
+        value: true
+
+  - slug: ai.aiqrm.monitoring_plan
+    prompt: "What is the post-deployment monitoring plan?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: triage.aiqrm_required
+        condition: equals
+        value: true
+
+  - slug: ai.aiqrm.human_review
+    prompt: "Is human review of AI outputs mandatory before they are relied on operationally, legally, or in client work?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  - slug: ai.aiqrm.periodic_review_cadence
+    prompt: "What is the periodic review cadence for this AI system?"
+    answer_type: single_select
+    options:
+      - {value: quarterly, label: "Quarterly"}
+      - {value: bi_annual, label: "Bi-annual"}
+      - {value: annual, label: "Annual"}
+      - {value: not_yet_set, label: "Not yet set"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: triage.aiqrm_required
+        condition: equals
+        value: true
+
+  - slug: ai.aiqrm.open_action_items
+    prompt: "Are there any prior AIRA / AIQRM action items still open?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: triage.aiqrm_required
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Third-party model specifics
+  # ─────────────────────────────────────────────────────
+
+  - slug: ai.third_party.data_retention_by_provider
+    prompt: "Does the third-party provider retain prompts, inputs, outputs, or logs?"
+    answer_type: single_select
+    options:
+      - {value: no_retention, label: "No retention (zero data retention)"}
+      - {value: limited_for_abuse, label: "Limited retention for abuse monitoring only"}
+      - {value: standard_retention, label: "Standard retention"}
+      - {value: training_use, label: "Used for provider's model training"}
+      - {value: unknown, label: "Unknown — needs review"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: ai.aira.is_inhouse_or_third_party
+        condition: in
+        values: [third_party, combination]
+
+  - slug: ai.third_party.geographic_processing
+    prompt: "In which countries does the third-party provider process the data?"
+    answer_type: entity_ref_multi
+    validation: {entity_type: Jurisdiction}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: ai.aira.is_inhouse_or_third_party
+        condition: in
+        values: [third_party, combination]
+
+  # ─────────────────────────────────────────────────────
+  # NOTE: more questions to be added by Question Authors
+  # ─────────────────────────────────────────────────────
+  # Areas flagged for expansion:
+  # - Per-system-type deeper validation (generative vs predictive vs agent)
+  # - Provider-specific compliance attestations
+  # - Hallucination / accuracy thresholds
+  # - Bias and fairness measurement
+  # - Explainability and transparency requirements
+  # - Training data provenance documentation
+  # - Model card / system card requirements

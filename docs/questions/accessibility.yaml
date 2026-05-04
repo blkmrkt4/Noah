@@ -1,0 +1,101 @@
+# Load when: working on WCAG conformance, accessibility testing, or assistive-tech support. Skip otherwise.
+
+section: accessibility
+description: |
+  Digital accessibility. Activates when triage.accessibility_required is true
+  (audience includes external clients, client end customers, or public).
+  Covers WCAG 2.1 AA conformance, accessibility testing engagement, and
+  remediation status. Reviewer domain: Brand Reviewer (accessibility is
+  reviewed as part of the brand / external-experience scope).
+
+questions:
+
+  - slug: accessibility.standard.target
+    prompt: "What accessibility standard is the asset targeting?"
+    answer_type: single_select
+    options:
+      - {value: wcag_2_1_aa, label: "WCAG 2.1 AA (EY policy default)"}
+      - {value: wcag_2_2_aa, label: "WCAG 2.2 AA"}
+      - {value: wcag_2_1_aaa, label: "WCAG 2.1 AAA (highest)"}
+      - {value: en_301_549, label: "EN 301 549 (EU public sector)"}
+      - {value: not_yet_set, label: "Not yet set"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: triage.accessibility_required
+        condition: equals
+        value: true
+
+  - slug: accessibility.testing.engaged_with_spsc
+    prompt: "Has the SPSC accessibility testing engagement been initiated?"
+    answer_type: single_select
+    options:
+      - {value: completed, label: "Completed"}
+      - {value: in_progress, label: "In progress"}
+      - {value: planned, label: "Planned"}
+      - {value: not_started, label: "Not started"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: triage.accessibility_required
+        condition: equals
+        value: true
+
+  - slug: accessibility.testing.results_summary
+    prompt: "Summarize accessibility test results (issues found, severity, status)."
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: accessibility.testing.engaged_with_spsc
+        condition: in
+        values: [completed, in_progress]
+
+  - slug: accessibility.remediation.plan
+    prompt: "What is the remediation plan for any identified accessibility gaps?"
+    answer_type: text_long
+    required: false
+    ai_prepopulation_priority: none
+    activates_when:
+      - parent_slug: accessibility.testing.engaged_with_spsc
+        condition: in
+        values: [completed, in_progress]
+
+  - slug: accessibility.assistive_tech.tested
+    prompt: "Which assistive technologies has the asset been tested with?"
+    answer_type: multi_select
+    options:
+      - {value: jaws, label: "JAWS"}
+      - {value: nvda, label: "NVDA"}
+      - {value: voiceover, label: "VoiceOver"}
+      - {value: talkback, label: "TalkBack"}
+      - {value: dragon, label: "Dragon NaturallySpeaking"}
+      - {value: keyboard_only, label: "Keyboard-only navigation"}
+      - {value: zoom_magnification, label: "Zoom / magnification (200%+)"}
+      - {value: none_yet, label: "None yet"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: triage.accessibility_required
+        condition: equals
+        value: true
+
+  - slug: accessibility.documentation.statement_published
+    prompt: "Will an accessibility statement be published with the asset?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: triage.accessibility_required
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # NOTE: more questions to be added by Question Authors
+  # ─────────────────────────────────────────────────────
+  # Areas flagged for expansion:
+  # - Per-WCAG-criterion conformance attestation
+  # - Mobile-specific accessibility
+  # - Document accessibility (PDF, Word, PowerPoint outputs)
+  # - Color contrast measurement
+  # - Captioning and transcripts for media

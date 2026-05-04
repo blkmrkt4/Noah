@@ -1,0 +1,221 @@
+# Load when: working on Privacy / PIA / DPIA / cross-border transfer / data subject rights features. Skip otherwise.
+
+section: privacy
+description: |
+  Privacy and data protection. Activates when triage.privacy_required is true.
+  Covers PIA (EY's Privacy Impact Assessment), DPIA evaluation under GDPR
+  Article 35, cross-border transfer mechanisms, data subject rights, retention,
+  consent, and DSO data risk where AI is involved. Reviewer domain: Privacy
+  Reviewer + Jurisdictional Reviewer for regional regimes (GDPR, UK GDPR, US
+  state laws, LGPD, PIPL, India DPDP).
+
+questions:
+
+  # ─────────────────────────────────────────────────────
+  # PIA core
+  # ─────────────────────────────────────────────────────
+
+  - slug: privacy.purpose.specific_purpose
+    prompt: "What is the specific purpose of the system / tool / application as it relates to data processing?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "Pulled from PRD if uploaded."
+    activates_when:
+      - parent_slug: triage.privacy_required
+        condition: equals
+        value: true
+
+  - slug: privacy.purpose.business_requirements
+    prompt: "What are the business requirements driving this processing?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: triage.privacy_required
+        condition: equals
+        value: true
+
+  - slug: privacy.personal_data.elements
+    prompt: "Which personal data elements are processed?"
+    answer_type: multi_select
+    options:
+      - {value: name, label: "Name"}
+      - {value: contact_details, label: "Contact details (email, phone, address)"}
+      - {value: government_id, label: "Government ID (passport, SSN, national ID)"}
+      - {value: financial, label: "Financial data (account numbers, transactions)"}
+      - {value: health, label: "Health / medical data"}
+      - {value: biometric, label: "Biometric data (face, voice, fingerprint, gait)"}
+      - {value: location, label: "Location / geolocation"}
+      - {value: behavioral, label: "Behavioral / activity / telemetry"}
+      - {value: employment, label: "Employment / HR data"}
+      - {value: minors, label: "Data about minors"}
+      - {value: special_category, label: "Special category data (race, religion, political views, union membership, sex life, etc.)"}
+      - {value: other, label: "Other"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when:
+      - parent_slug: data.types
+        condition: contains
+        value: personal_data
+
+  - slug: privacy.personal_data.necessity
+    prompt: "Is all collected personal data strictly necessary for the stated purpose, or is some collected for convenience?"
+    answer_type: single_select
+    options:
+      - {value: all_necessary, label: "All necessary — minimum viable"}
+      - {value: some_convenience, label: "Some collected for convenience or future-proofing"}
+      - {value: unsure, label: "Unsure — flag for Privacy Reviewer"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: data.types
+        condition: contains
+        value: personal_data
+
+  # ─────────────────────────────────────────────────────
+  # DPIA evaluation
+  # ─────────────────────────────────────────────────────
+
+  - slug: privacy.dpia.required
+    prompt: "Is a DPIA required under GDPR Article 35?"
+    answer_type: single_select
+    options:
+      - {value: required, label: "Yes — required (high-risk processing)"}
+      - {value: not_required, label: "No — not required"}
+      - {value: unsure, label: "Unsure — flag for Privacy Reviewer"}
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "DPIA is required for systematic and extensive automated processing, large-scale special-category processing, or systematic monitoring of public areas."
+    activates_when:
+      - parent_slug: data.types
+        condition: contains
+        value: personal_data
+
+  - slug: privacy.dpia.high_risk_factors
+    prompt: "Which high-risk factors apply?"
+    answer_type: multi_select
+    options:
+      - {value: automated_decisions, label: "Automated decision-making with legal or significant effects"}
+      - {value: large_scale_special, label: "Large-scale processing of special-category data"}
+      - {value: systematic_monitoring, label: "Systematic monitoring of public areas"}
+      - {value: vulnerable_subjects, label: "Data about vulnerable populations (minors, employees in monitoring contexts)"}
+      - {value: novel_technology, label: "Novel technology with unclear privacy implications"}
+      - {value: prevents_rights, label: "Processing that prevents subjects from exercising a right or using a service"}
+      - {value: none, label: "None of the above"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: privacy.dpia.required
+        condition: equals
+        value: required
+
+  # ─────────────────────────────────────────────────────
+  # Cross-border transfer
+  # ─────────────────────────────────────────────────────
+
+  - slug: privacy.transfer.mechanism
+    prompt: "What is the legal mechanism for cross-border data transfer?"
+    answer_type: multi_select
+    options:
+      - {value: adequacy, label: "Adequacy decision (e.g., EU-approved jurisdictions)"}
+      - {value: sccs, label: "Standard Contractual Clauses (SCCs)"}
+      - {value: bcrs, label: "Binding Corporate Rules (BCRs)"}
+      - {value: derogation, label: "Specific derogation under GDPR Art. 49"}
+      - {value: localization, label: "Localized — no cross-border transfer occurs"}
+      - {value: not_yet_established, label: "Not yet established — needs review"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: data.crossborder.has_transfer
+        condition: equals
+        value: true
+
+  - slug: privacy.transfer.localization_jurisdictions
+    prompt: "Are any in-scope jurisdictions known to have data localization requirements that conflict with the planned transfer?"
+    answer_type: entity_ref_multi
+    validation: {entity_type: Jurisdiction}
+    required: false
+    ai_prepopulation_priority: medium
+    help_text: "Examples: China (PIPL localization), Russia, India in some sectors. Pre-populated against the Jurisdiction registry."
+    activates_when:
+      - parent_slug: data.crossborder.has_transfer
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Subject rights handling
+  # ─────────────────────────────────────────────────────
+
+  - slug: privacy.subject_rights.supported
+    prompt: "Which data subject rights does the asset support?"
+    answer_type: multi_select
+    options:
+      - {value: access, label: "Right of access"}
+      - {value: rectification, label: "Right to rectification"}
+      - {value: erasure, label: "Right to erasure / be forgotten"}
+      - {value: restriction, label: "Right to restriction"}
+      - {value: portability, label: "Right to data portability"}
+      - {value: objection, label: "Right to object"}
+      - {value: automated_decisions, label: "Right not to be subject to solely-automated decisions"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: data.types
+        condition: contains
+        value: personal_data
+
+  - slug: privacy.subject_rights.workflow
+    prompt: "How are subject rights requests received, triaged, and fulfilled?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: data.types
+        condition: contains
+        value: personal_data
+
+  # ─────────────────────────────────────────────────────
+  # Profile PIA / common-purpose platform
+  # ─────────────────────────────────────────────────────
+
+  - slug: privacy.profile_pia.eligible
+    prompt: "Is the system a candidate for a Profile PIA (common-purpose platform with similar systems already PIA-approved)?"
+    answer_type: single_select
+    options:
+      - {value: yes_use_existing, label: "Yes — fits an existing Profile PIA; can use pre-approved action plan"}
+      - {value: yes_create_new, label: "Yes — could anchor a new Profile PIA"}
+      - {value: no, label: "No — case-by-case PIA needed"}
+    required: false
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: triage.privacy_required
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Confidentiality and professional secrecy
+  # ─────────────────────────────────────────────────────
+
+  - slug: privacy.confidentiality.professional_secrecy
+    prompt: "Are there confidentiality or professional secrecy obligations beyond standard GDPR / data protection?"
+    answer_type: text_long
+    required: false
+    ai_prepopulation_priority: low
+    help_text: "E.g., German professional secrecy, attorney-client privilege contexts, audit work papers."
+    activates_when:
+      - parent_slug: data.types
+        condition: contains
+        value: client_information
+
+  # ─────────────────────────────────────────────────────
+  # NOTE: more questions to be added by Question Authors
+  # ─────────────────────────────────────────────────────
+  # The following branches are flagged for expansion by Question Authors:
+  # - Detailed personal data flow mapping per data element
+  # - Per-jurisdiction local privacy law overlay
+  # - Sub-processor chain documentation
+  # - Privacy notice / consent UX questions
+  # - Children's data special handling
+  # - Employee monitoring depth (links to Q8-Q12 from initial question set)
+  # - Biometric data special handling

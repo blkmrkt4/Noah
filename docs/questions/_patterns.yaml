@@ -1,0 +1,121 @@
+# ARC Initial Pattern Library
+# Load when: building the pattern loader, or working on fast-track logic.
+# V1 ships with four patterns named in prd.md § 9.
+
+patterns:
+  - name: "Internal-only knowledge assistant on approved EY AI platform"
+    description: |
+      Internal users only, EY-policy-only data (C2 approved), no client data,
+      no automated decisions, on an approved EY platform. Fast-track: AIQRM and
+      Privacy waived; Brand streamlined.
+    criteria:
+      - slug: audience.types
+        condition: equals
+        value: [ey_personnel]
+      - slug: data.classification.highest_tier
+        condition: in
+        values: [c1, c2]
+      - slug: use.deployment_model
+        condition: equals
+        value: internal_only
+      - slug: ai.exists
+        condition: equals
+        value: true
+      - slug: hosting.environment
+        condition: in
+        values: [ey_fabric, azure_ey]
+      - slug: data.types
+        condition: not_contains
+        value: client_information
+    jurisdiction_scope: null  # applies globally
+    reviewer_waivers:
+      - domain: ai
+        disposition: approve
+        note: "Pre-approved AI platform, internal-only, C2 max"
+      - domain: privacy
+        disposition: approve
+        note: "No personal data, no client data, internal users only"
+      - domain: brand
+        disposition: conditional
+        note: "Streamlined brand review — naming check only"
+
+  - name: "Read-only single-client viewer of client-supplied data under SOW"
+    description: |
+      Single client, client data, read-only, no AI inference, SOW-bounded.
+      Fast-track: DSO green-lane, expedited Privacy.
+    criteria:
+      - slug: use.deployment_model
+        condition: equals
+        value: client_engagement
+      - slug: ai.exists
+        condition: equals
+        value: false
+      - slug: data.sources
+        condition: contains
+        value: client_provided
+      - slug: data.classification.highest_tier
+        condition: in
+        values: [c3, c2]
+      - slug: software.created_with_external_party
+        condition: equals
+        value: false
+    jurisdiction_scope: null
+    reviewer_waivers:
+      - domain: security
+        disposition: conditional
+        note: "Read-only access reduces security scope to data-at-rest controls"
+      - domain: privacy
+        disposition: conditional
+        note: "Expedited privacy — SOW-bounded, single client, client-supplied data"
+
+  - name: "Public-domain data analytics tool, no personal data"
+    description: |
+      Public/IP-free data only, no PII, no client data, internal users.
+      Fast-track: Privacy waived, Independence streamlined.
+    criteria:
+      - slug: data.classification.highest_tier
+        condition: equals
+        value: c1
+      - slug: data.types
+        condition: equals
+        value: [public]
+      - slug: data.sources
+        condition: in
+        values: [public, ai_generated]
+      - slug: audience.types
+        condition: equals
+        value: [ey_personnel]
+      - slug: use.deployment_model
+        condition: equals
+        value: internal_only
+      - slug: client.is_audit_client
+        condition: equals
+        value: false
+    jurisdiction_scope: null
+    reviewer_waivers:
+      - domain: privacy
+        disposition: approve
+        note: "No personal data, no client data, public domain only"
+      - domain: independence
+        disposition: conditional
+        note: "Streamlined — no client nexus, internal tool"
+
+  - name: "Production AI agent with C3 client data and CIC"
+    description: |
+      Full review path. Pattern documents what evidence is required so the team
+      can prepare upfront. No waivers — all reviewers engage.
+    criteria:
+      - slug: ai.exists
+        condition: equals
+        value: true
+      - slug: data.classification.highest_tier
+        condition: in
+        values: [c3, c4]
+      - slug: audience.types
+        condition: contains
+        value: external_clients
+      - slug: client.is_audit_client
+        condition: equals
+        value: true
+    jurisdiction_scope: null
+    reviewer_waivers: []  # No waivers — full review required

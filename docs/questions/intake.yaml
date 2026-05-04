@@ -1,0 +1,354 @@
+# Load when: any work on the questionnaire — these foundational answers drive the dependency DAG. Higher load-priority than section files.
+
+section: intake
+description: |
+  Foundational questions every project answers. These have no parents — they are
+  the entry points to the questionnaire. The answers here drive the dependency
+  DAG: every other section's activation rules reference at least one slug from
+  this file. AI pre-population priority is high across this section because most
+  of these facts are stated explicitly in the product's PRD, marketing material,
+  or architecture documents.
+
+questions:
+
+  # ─────────────────────────────────────────────────────
+  # Asset identity
+  # ─────────────────────────────────────────────────────
+
+  - slug: asset.name
+    prompt: "What is the asset name?"
+    answer_type: text_short
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: asset.description
+    prompt: "Describe the asset and its main purpose / functions."
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "A 2–4 sentence description. The system will pre-populate from your PRD if uploaded."
+    activates_when: []
+
+  - slug: asset.apm_id
+    prompt: "What is the APM ID for this asset?"
+    answer_type: text_short
+    required: false
+    ai_prepopulation_priority: medium
+    help_text: "Leave blank if the asset is not yet registered in APM."
+    activates_when: []
+
+  - slug: asset.application_type
+    prompt: "What is the application type?"
+    answer_type: single_select
+    options:
+      - {value: cots, label: "COTS (commercial off-the-shelf)"}
+      - {value: homegrown, label: "Homegrown (built by EY)"}
+      - {value: saas, label: "SaaS (third-party hosted)"}
+      - {value: hybrid, label: "Hybrid (combination)"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  # ─────────────────────────────────────────────────────
+  # Ownership and accountability
+  # ─────────────────────────────────────────────────────
+
+  - slug: owners.commercial_owner
+    prompt: "Who is the Commercial Owner (business sponsor / accountable partner)?"
+    answer_type: entity_ref
+    validation: {entity_type: User}
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "Defaults to the user creating the project; can be reassigned."
+    activates_when: []
+
+  - slug: owners.business_owner
+    prompt: "Who is the business owner?"
+    answer_type: entity_ref
+    validation: {entity_type: User}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when: []
+
+  - slug: owners.it_application_owner
+    prompt: "Who is the IT application owner?"
+    answer_type: entity_ref
+    validation: {entity_type: User}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when: []
+
+  - slug: owners.legal_entity
+    prompt: "What is the owning legal entity?"
+    answer_type: text_short
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "E.g., EYGS LLP, EY UK LLP, EYGP LLP."
+    activates_when: []
+
+  # ─────────────────────────────────────────────────────
+  # Audience and use
+  # ─────────────────────────────────────────────────────
+
+  - slug: audience.types
+    prompt: "Who are the intended users?"
+    answer_type: multi_select
+    options:
+      - {value: ey_personnel, label: "EY personnel (employees, contractors, partners)"}
+      - {value: external_clients, label: "External clients"}
+      - {value: client_end_customers, label: "Client end customers (the client's own customers)"}
+      - {value: vendors, label: "Vendors"}
+      - {value: cosource_vendors, label: "Co-source vendors"}
+      - {value: public, label: "Public (general public access)"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: use.deployment_model
+    prompt: "How will the asset be used?"
+    answer_type: single_select
+    options:
+      - {value: internal_only, label: "Internal EY tool only"}
+      - {value: client_engagement, label: "Used on a specific client engagement"}
+      - {value: managed_service, label: "Sold as a managed service"}
+      - {value: reusable_product, label: "Reusable product/platform across many clients"}
+      - {value: marketplace, label: "Available via marketplace / public listing"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  # ─────────────────────────────────────────────────────
+  # Service line and engagement
+  # ─────────────────────────────────────────────────────
+
+  - slug: service.target_service_lines
+    prompt: "Which service lines will use this asset?"
+    answer_type: multi_select
+    options:
+      - {value: assurance, label: "Assurance"}
+      - {value: tax, label: "Tax"}
+      - {value: consulting, label: "Consulting"}
+      - {value: sat, label: "Strategy and Transactions (SaT)"}
+      - {value: sustainability, label: "Sustainability"}
+      - {value: clients_industries, label: "Clients & Industries (C&I)"}
+      - {value: cross_service_line, label: "Cross-service-line / firm-wide"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: service.engagement_charge_code
+    prompt: "What is the engagement / charge code for costed compliance activities?"
+    answer_type: text_short
+    required: false
+    ai_prepopulation_priority: low
+    activates_when: []
+
+  # ─────────────────────────────────────────────────────
+  # Jurisdictions
+  # ─────────────────────────────────────────────────────
+
+  - slug: jurisdictions.scope_type
+    prompt: "What is the deployment scope?"
+    answer_type: single_select
+    options:
+      - {value: single_country, label: "Single country"}
+      - {value: multi_country, label: "Multi-country (specific list)"}
+      - {value: regional, label: "Regional (one or more SuperRegions)"}
+      - {value: global, label: "Global (all countries where EY operates)"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: jurisdictions.target_countries
+    prompt: "Which countries are in scope?"
+    answer_type: entity_ref_multi
+    validation: {entity_type: Jurisdiction}
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "Pre-populated from `jurisdictions.scope_type`. For 'global', all countries are added automatically; you can prune."
+    activates_when:
+      - parent_slug: jurisdictions.scope_type
+        condition: not_equals
+        value: global
+
+  - slug: jurisdictions.development_countries
+    prompt: "In which countries is the asset being developed?"
+    answer_type: entity_ref_multi
+    validation: {entity_type: Jurisdiction}
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "Where the engineering team is located. Affects independence and cross-border data."
+    activates_when: []
+
+  - slug: jurisdictions.support_countries
+    prompt: "In which countries are support / admin teams located?"
+    answer_type: entity_ref_multi
+    validation: {entity_type: Jurisdiction}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when: []
+
+  - slug: jurisdictions.hosting_countries
+    prompt: "In which countries is the asset hosted (data centers / cloud regions)?"
+    answer_type: entity_ref_multi
+    validation: {entity_type: Jurisdiction}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  # ─────────────────────────────────────────────────────
+  # Hosting and infrastructure
+  # ─────────────────────────────────────────────────────
+
+  - slug: hosting.environment
+    prompt: "What is the hosting environment?"
+    answer_type: single_select
+    options:
+      - {value: ey_fabric, label: "EY Fabric"}
+      - {value: azure_ey, label: "Azure (EY tenant)"}
+      - {value: aws_ey, label: "AWS (EY account)"}
+      - {value: gcp_ey, label: "GCP (EY project)"}
+      - {value: third_party_saas, label: "Third-party SaaS"}
+      - {value: client_environment, label: "Client environment"}
+      - {value: hybrid, label: "Hybrid"}
+      - {value: other, label: "Other (specify in description)"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: hosting.uat_url
+    prompt: "What is the UAT URL?"
+    answer_type: url
+    required: false
+    ai_prepopulation_priority: medium
+    activates_when: []
+
+  - slug: hosting.production_url
+    prompt: "What is the production URL?"
+    answer_type: url
+    required: false
+    ai_prepopulation_priority: medium
+    activates_when: []
+
+  # ─────────────────────────────────────────────────────
+  # Data — the spine of the routing logic
+  # ─────────────────────────────────────────────────────
+
+  - slug: data.classification.highest_tier
+    prompt: "What is the highest data classification used by the asset?"
+    answer_type: single_select
+    options:
+      - {value: c1, label: "C1 — Public, no restrictions"}
+      - {value: c2, label: "C2 — Internal EY business information"}
+      - {value: c3, label: "C3 — Confidential (most client information)"}
+      - {value: c4, label: "C4 — Highly confidential client information"}
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "This is the most consequential answer in the entire questionnaire. It activates entire branches of Privacy, AI, Security, and Contracts questions."
+    activates_when: []
+
+  - slug: data.types
+    prompt: "What categories of data does the asset process?"
+    answer_type: multi_select
+    options:
+      - {value: personal_data, label: "Personal data (about identifiable individuals)"}
+      - {value: client_information, label: "Client information / client confidential"}
+      - {value: ey_business_information, label: "EY business information"}
+      - {value: third_party_licensed, label: "Third-party licensed data"}
+      - {value: synthetic, label: "Synthetic / artificially generated data"}
+      - {value: public, label: "Public / open data"}
+      - {value: telemetry, label: "Operational telemetry only"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: data.sources
+    prompt: "What are the data sources?"
+    answer_type: multi_select
+    options:
+      - {value: internal, label: "Internally sourced (EY-generated)"}
+      - {value: client_provided, label: "Client-provided"}
+      - {value: third_party_procured, label: "Third-party procured / licensed"}
+      - {value: public, label: "Public / open / scraped"}
+      - {value: ai_generated, label: "AI-generated (synthetic)"}
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: data.crossborder.has_transfer
+    prompt: "Does data cross borders between countries (origin, hosting, support, end-user access)?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "Pre-populated based on jurisdictions.* answers if those countries differ."
+    activates_when: []
+
+  # ─────────────────────────────────────────────────────
+  # Foundational Yes/No flags that drive section activation
+  # ─────────────────────────────────────────────────────
+
+  - slug: ai.exists
+    prompt: "Does the asset contain any AI functionality?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "Includes any LLM use, ML model, recommendation engine, scoring, classification, agent, or autonomous workflow. The repo scan will flag candidate AI dependencies."
+    activates_when: []
+
+  - slug: software.uses_oss
+    prompt: "Does the asset use any open source software components?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: high
+    help_text: "Includes libraries, frameworks, models, and AI components with open source licenses. The repo scan will flag the dependency tree."
+    activates_when: []
+
+  - slug: software.is_non_standard
+    prompt: "Does the asset involve any non-standard software (NSS) — software not part of the standard approved EY route?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when: []
+
+  - slug: software.created_with_external_party
+    prompt: "Was any of the asset's code, prompts, configuration, models, or documentation created by a vendor, contractor, client, or external party?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "Triggers the IP / ownership transfer review."
+    activates_when: []
+
+  - slug: client.is_audit_client
+    prompt: "Is the asset used for, sold to, or deployed in connection with an EY audit client or independence-restricted entity?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "If unsure, answer Yes — Independence Reviewer can confirm via GIS/SORT."
+    activates_when: []
+
+  - slug: client.is_restricted_entity
+    prompt: "Is the asset used in connection with any restricted-entity client type?"
+    answer_type: boolean
+    required: false
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: client.is_audit_client
+        condition: equals
+        value: false
+
+  - slug: vendor.has_third_party_relationship
+    prompt: "Does the asset rely on a third-party vendor or business relationship (not just a SaaS license but any commercial relationship that goes beyond a standard purchase)?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "Triggers BRIDGE review. Includes co-development, revenue-sharing, data-sharing, and ongoing service partnerships."
+    activates_when: []
+
+  - slug: service.touches_financial_systems
+    prompt: "Does the asset touch financial systems, controls, reporting, management decisions, or outputs that EY would later assess in an assurance capacity?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: low
+    help_text: "Activates the own-work / acting-as-management independence branch."
+    activates_when: []

@@ -1,0 +1,197 @@
+# Load when: working on Independence review, BRIDGE flow, audit-client permissibility, or own-work / management-acting / advocacy logic. Skip otherwise.
+
+section: independence
+description: |
+  EY independence rules. Cross-cutting Review (attaches to the Project as a
+  whole, not a specific Section). Activates when client.is_audit_client,
+  vendor.has_third_party_relationship, or service.touches_financial_systems
+  is true. Reviewer domain: Independence Reviewer (firm-level), with
+  Jurisdictional Reviewer applying country-specific increments.
+
+questions:
+
+  # ─────────────────────────────────────────────────────
+  # Audit-client / restricted-entity check
+  # ─────────────────────────────────────────────────────
+
+  - slug: independence.client.identification
+    prompt: "Identify the client(s) the asset will be used for or sold to."
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: low
+    help_text: "Used by Independence Reviewer for GIS / GMS / SORT lookup."
+    activates_when:
+      - parent_slug: client.is_audit_client
+        condition: equals
+        value: true
+
+  - slug: independence.client.sort_classification
+    prompt: "Has the client been checked in SORT?"
+    answer_type: single_select
+    options:
+      - {value: yes_permitted, label: "Yes — services classified as permitted"}
+      - {value: yes_restricted, label: "Yes — services classified as restricted"}
+      - {value: not_yet, label: "Not yet — Reviewer will run SORT lookup"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: client.is_audit_client
+        condition: equals
+        value: true
+
+  - slug: independence.client.gis_lookup_status
+    prompt: "Has the client and its affiliates been verified in GIS / GMS?"
+    answer_type: single_select
+    options:
+      - {value: completed, label: "Completed"}
+      - {value: not_yet, label: "Not yet — Reviewer will run lookup"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: client.is_audit_client
+        condition: equals
+        value: true
+
+  - slug: independence.client.country_increments
+    prompt: "Are there country-specific independence increments that apply (some jurisdictions are more restrictive than the global baseline)?"
+    answer_type: text_long
+    required: false
+    ai_prepopulation_priority: low
+    help_text: "If unsure, leave blank — the Jurisdictional Reviewer will apply local increments."
+    activates_when:
+      - parent_slug: client.is_audit_client
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Own-work / acting-as-management / advocacy
+  # ─────────────────────────────────────────────────────
+
+  - slug: independence.ownwork.creates_controls
+    prompt: "Does the asset create or operate controls that EY would later evaluate as part of an assurance engagement?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: low
+    help_text: "Triggers the 'auditing one's own work' concern."
+    activates_when:
+      - parent_slug: service.touches_financial_systems
+        condition: equals
+        value: true
+
+  - slug: independence.ownwork.makes_management_decisions
+    prompt: "Does the asset make management decisions, post entries, approve actions, or assume operational authority on behalf of the client?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: low
+    help_text: "Triggers the 'acting as management' concern."
+    activates_when:
+      - parent_slug: service.touches_financial_systems
+        condition: equals
+        value: true
+
+  - slug: independence.ownwork.outputs_subject_to_assurance
+    prompt: "Does the asset generate outputs that later become subject to an EY assurance review?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: service.touches_financial_systems
+        condition: equals
+        value: true
+
+  - slug: independence.advocacy.role
+    prompt: "Could the asset put EY in an advocacy role (taking a position favorable to a client that could compromise objectivity)?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: client.is_audit_client
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # BRIDGE — third-party relationships
+  # ─────────────────────────────────────────────────────
+
+  - slug: independence.bridge.vendor_identity
+    prompt: "Identify the third-party vendor(s) involved in the relationship."
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: vendor.has_third_party_relationship
+        condition: equals
+        value: true
+
+  - slug: independence.bridge.relationship_type
+    prompt: "What type of commercial relationship?"
+    answer_type: multi_select
+    options:
+      - {value: standard_purchase, label: "Standard purchase / license"}
+      - {value: ongoing_service, label: "Ongoing service / subscription"}
+      - {value: revenue_sharing, label: "Revenue-sharing"}
+      - {value: co_development, label: "Co-development"}
+      - {value: data_sharing, label: "Data-sharing"}
+      - {value: white_label, label: "White-label / OEM"}
+      - {value: marketplace, label: "Marketplace partnership"}
+      - {value: equity, label: "Equity stake"}
+      - {value: other, label: "Other"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: vendor.has_third_party_relationship
+        condition: equals
+        value: true
+
+  - slug: independence.bridge.vendor_independence_status
+    prompt: "Is the vendor or its parent independence-restricted to EY?"
+    answer_type: single_select
+    options:
+      - {value: yes_restricted, label: "Yes — restricted"}
+      - {value: no_unrestricted, label: "No — unrestricted"}
+      - {value: unknown, label: "Unknown — Reviewer will check"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: vendor.has_third_party_relationship
+        condition: equals
+        value: true
+
+  - slug: independence.bridge.completed
+    prompt: "Has BRIDGE been completed for this relationship?"
+    answer_type: single_select
+    options:
+      - {value: yes_approved, label: "Yes — approved"}
+      - {value: yes_rejected, label: "Yes — rejected"}
+      - {value: in_progress, label: "In progress"}
+      - {value: not_started, label: "Not started"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: vendor.has_third_party_relationship
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Channel One / restricted client handling
+  # ─────────────────────────────────────────────────────
+  # NOTE: "Channel One" was mentioned by the product sponsor as an example of
+  # a restricted-client classification. The exact rule is not encoded in the
+  # source materials available to V1. Question Author should add the explicit
+  # Channel One question once the firm's classification rule is confirmed.
+
+  - slug: independence.restricted_channel.flag
+    prompt: "Is the client classified under any restricted channel (e.g., Channel One)?"
+    answer_type: single_select
+    options:
+      - {value: channel_one, label: "Channel One"}
+      - {value: other_restricted, label: "Other restricted classification"}
+      - {value: not_restricted, label: "Not restricted"}
+      - {value: unknown, label: "Unknown — Reviewer will check"}
+    required: false
+    ai_prepopulation_priority: none
+    help_text: "Awaiting confirmation of firm-internal classification rule. Question Author to expand."
+    activates_when:
+      - parent_slug: client.is_audit_client
+        condition: equals
+        value: true

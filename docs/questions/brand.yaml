@@ -1,0 +1,152 @@
+# Load when: working on naming, brand identity, UX, or Motif Design System integration. Skip otherwise.
+
+section: brand
+description: |
+  Brand, naming, and UX. Cross-cutting Review (attaches to the Project as a
+  whole). Activates when triage.brand_path is set. Standard path is required
+  for any public-facing or multi-client product; streamlined path applies to
+  internal-only, single-client, or third-party SaaS with limited UI
+  configurability. Reviewer domain: Brand Reviewer.
+
+questions:
+
+  # ─────────────────────────────────────────────────────
+  # Naming
+  # ─────────────────────────────────────────────────────
+
+  - slug: brand.name.proposed
+    prompt: "What is the proposed product / asset name?"
+    answer_type: text_short
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: brand.name.rationale
+    prompt: "What is the rationale for the proposed name?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when: []
+
+  - slug: brand.name.alternatives_considered
+    prompt: "What alternative names were considered?"
+    answer_type: text_long
+    required: false
+    ai_prepopulation_priority: low
+    activates_when: []
+
+  - slug: brand.name.visible_externally
+    prompt: "Will the name be visible externally (to clients, public, partners)?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: brand.name.uses_ey_prefix
+    prompt: "Does the name use the EY prefix or other EY brand element?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: brand.name.trademark_search_status
+    prompt: "Has a trademark / prior-rights search been completed?"
+    answer_type: single_select
+    options:
+      - {value: completed_clear, label: "Completed — no conflicts"}
+      - {value: completed_concerns, label: "Completed — concerns identified"}
+      - {value: in_progress, label: "In progress"}
+      - {value: not_started, label: "Not started"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: brand.name.visible_externally
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Brand identity / visual
+  # ─────────────────────────────────────────────────────
+
+  - slug: brand.identity.uses_ey_branding
+    prompt: "Does the asset use EY branding (logo, colors, typography)?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: high
+    activates_when: []
+
+  - slug: brand.identity.uses_motif
+    prompt: "Does the asset use the Motif Design System?"
+    answer_type: single_select
+    options:
+      - {value: yes_fully, label: "Yes — fully aligned"}
+      - {value: yes_partially, label: "Yes — partially aligned"}
+      - {value: planned, label: "Planned but not yet implemented"}
+      - {value: no, label: "No"}
+      - {value: not_applicable, label: "Not applicable (no UI / third-party SaaS UI)"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: triage.brand_path
+        condition: equals
+        value: standard
+
+  - slug: brand.identity.screenshots_uploaded
+    prompt: "Have UI screenshots / mockups been uploaded?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: high
+    activates_when:
+      - parent_slug: triage.brand_path
+        condition: equals
+        value: standard
+
+  # ─────────────────────────────────────────────────────
+  # Marketing and positioning
+  # ─────────────────────────────────────────────────────
+
+  - slug: brand.marketing.bmc_engaged
+    prompt: "Has BMC (Brand, Marketing & Communications) been engaged?"
+    answer_type: single_select
+    options:
+      - {value: yes_active, label: "Yes — actively engaged"}
+      - {value: yes_briefed, label: "Yes — briefed but not yet active"}
+      - {value: not_yet, label: "Not yet"}
+      - {value: not_applicable, label: "Not applicable (internal only)"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: brand.name.visible_externally
+        condition: equals
+        value: true
+
+  - slug: brand.marketing.public_messaging
+    prompt: "What is the planned public messaging / value proposition?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: brand.name.visible_externally
+        condition: equals
+        value: true
+
+  - slug: brand.marketing.ai_claims
+    prompt: "Are there any AI-related claims in the marketing (e.g., 'powered by AI', 'autonomous', 'intelligent')?"
+    answer_type: boolean
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "AI claims have implications under the EU AI Act and FTC marketing standards."
+    activates_when:
+      - parent_slug: ai.exists
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # NOTE: more questions to be added by Question Authors
+  # ─────────────────────────────────────────────────────
+  # Areas flagged for expansion:
+  # - Per-region naming sensitivities
+  # - Co-branded products (EY + client)
+  # - Commercial messaging review
+  # - Demo and sales material approvals
+  # - Domain name and URL strategy

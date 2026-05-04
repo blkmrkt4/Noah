@@ -1,0 +1,155 @@
+# Load when: working on Non-Standard Software review — license acquisition, AUP, data sharing with NSS. Skip otherwise.
+
+section: nss
+description: |
+  Non-Standard Software (NSS) review. Activates when software.is_non_standard
+  is true. Hinges on who is acquiring the license and what data is shared,
+  which determines downstream review engagement (Security Consulting, BRIDGE,
+  GCO, Data Protection). Reviewer engagement: Security Reviewer (Security
+  Consulting where required), Independence Reviewer (BRIDGE), Contracts (GCO
+  license review where EY is licensee), Privacy Reviewer (Data Protection
+  where PII shared).
+
+questions:
+
+  - slug: nss.identity.software_name
+    prompt: "What is the non-standard software (name and version)?"
+    answer_type: text_short
+    required: true
+    ai_prepopulation_priority: high
+    activates_when:
+      - parent_slug: software.is_non_standard
+        condition: equals
+        value: true
+
+  - slug: nss.identity.vendor
+    prompt: "Who is the vendor / publisher of the NSS?"
+    answer_type: text_short
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: software.is_non_standard
+        condition: equals
+        value: true
+
+  - slug: nss.identity.use_case
+    prompt: "What is the use case for the NSS in 1–2 sentences?"
+    answer_type: text_long
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: software.is_non_standard
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # Licensing party — drives the review path
+  # ─────────────────────────────────────────────────────
+
+  - slug: nss.licensing.acquiring_party
+    prompt: "Who is acquiring the license?"
+    answer_type: single_select
+    options:
+      - {value: ey_global, label: "EY Global / Member Firm"}
+      - {value: ey_engagement, label: "EY engagement (charged to specific charge code)"}
+      - {value: client_directly, label: "Client directly (EY uses on client's license)"}
+      - {value: third_party, label: "Third party (e.g., subcontractor)"}
+      - {value: free_open_use, label: "Free / open-use (no formal license)"}
+    required: true
+    ai_prepopulation_priority: medium
+    help_text: "EY-acquired licenses trigger the full Security Consulting + GCO + BRIDGE review chain."
+    activates_when:
+      - parent_slug: software.is_non_standard
+        condition: equals
+        value: true
+
+  - slug: nss.licensing.cost
+    prompt: "What is the cost of the license (one-time + annual)?"
+    answer_type: text_short
+    required: true
+    ai_prepopulation_priority: low
+    help_text: "Determines whether SCS zero-dollar threshold applies."
+    activates_when:
+      - parent_slug: nss.licensing.acquiring_party
+        condition: equals
+        value: ey_global
+
+  # ─────────────────────────────────────────────────────
+  # Data sharing — drives the review path
+  # ─────────────────────────────────────────────────────
+
+  - slug: nss.data.types_shared
+    prompt: "What data types will be shared with the NSS?"
+    answer_type: multi_select
+    options:
+      - {value: no_data, label: "No data — software runs locally without data"}
+      - {value: ey_only_data, label: "EY-only data (no client, no PII)"}
+      - {value: client_data, label: "Client data"}
+      - {value: personal_data, label: "Personal data (PII)"}
+      - {value: special_category, label: "Special category personal data"}
+      - {value: financial_data, label: "Financial data"}
+      - {value: synthetic, label: "Synthetic data only"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: software.is_non_standard
+        condition: equals
+        value: true
+
+  - slug: nss.data.classification_shared
+    prompt: "What is the highest data classification that will be shared with the NSS?"
+    answer_type: single_select
+    options:
+      - {value: c1, label: "C1"}
+      - {value: c2, label: "C2"}
+      - {value: c3, label: "C3"}
+      - {value: c4, label: "C4"}
+      - {value: no_data_shared, label: "No data shared"}
+    required: true
+    ai_prepopulation_priority: medium
+    activates_when:
+      - parent_slug: software.is_non_standard
+        condition: equals
+        value: true
+
+  # ─────────────────────────────────────────────────────
+  # AUP and approvals
+  # ─────────────────────────────────────────────────────
+
+  - slug: nss.aup.attestation_completed
+    prompt: "Has the Acceptable Use Policy (AUP) attestation been completed?"
+    answer_type: single_select
+    options:
+      - {value: completed, label: "Completed"}
+      - {value: in_progress, label: "In progress"}
+      - {value: not_started, label: "Not started"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: software.is_non_standard
+        condition: equals
+        value: true
+
+  - slug: nss.security_consulting.engaged
+    prompt: "Has Security Consulting been engaged for NSS review?"
+    answer_type: single_select
+    options:
+      - {value: completed, label: "Completed"}
+      - {value: in_progress, label: "In progress"}
+      - {value: not_required, label: "Not required (low data classification, EY-only use)"}
+      - {value: not_started, label: "Not started"}
+    required: true
+    ai_prepopulation_priority: low
+    activates_when:
+      - parent_slug: nss.data.classification_shared
+        condition: in
+        values: [c2, c3, c4]
+
+  # ─────────────────────────────────────────────────────
+  # NOTE: more questions to be added by Question Authors
+  # ─────────────────────────────────────────────────────
+  # Areas flagged for expansion:
+  # - GCO contract review checklist for NSS
+  # - BRIDGE flow for NSS vendor classification
+  # - Data Protection sub-process for PII shared with NSS
+  # - Standard NSS exemption catalog (commonly used internal tools)
