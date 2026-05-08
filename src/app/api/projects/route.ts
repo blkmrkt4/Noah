@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 /** POST /api/projects — Create a new project */
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { name, commercialOwnerId, scopeType, jurisdictionIds } = body;
+  const { name, commercialOwnerId, scopeType, jurisdictionIds, jurisdictionMode } = body;
 
   if (!name || !commercialOwnerId || !scopeType) {
     return NextResponse.json(
@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       name,
       commercialOwnerId,
       scopeType,
+      jurisdictionMode: jurisdictionMode === "exclude" ? "exclude" : "include",
       jurisdictions: jurisdictionIds?.length
         ? {
             create: jurisdictionIds.map((jId: string) => ({

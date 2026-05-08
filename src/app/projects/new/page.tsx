@@ -1,17 +1,92 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageTitle, Card, Button, Input, Select } from "@/components/ui";
+import { PageTitle, Card, Button, Input } from "@/components/ui";
+import {
+  JurisdictionPicker,
+  summarizeScope,
+  type JurisdictionScope,
+} from "@/components/JurisdictionPicker";
+
+interface Region {
+  id: string;
+  countries: { id: string; code: string; name: string }[];
+}
 
 export default function NewProjectPage() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [scopeType, setScopeType] = useState("");
+  const [scope, setScope] = useState<JurisdictionScope>(null);
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [regions, setRegions] = useState<Region[] | null>(null);
+
+  // Fetch the jurisdiction directory once so we can map picker codes back to
+  // the IDs the API expects.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/jurisdictions")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setRegions(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setRegions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // code -> id lookup, built once regions land.
+  const codeToId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of regions ?? []) {
+      for (const c of r.countries) map.set(c.code, c.id);
+    }
+    return map;
+  }, [regions]);
+
+  // Derive the persisted shape from the picker's user-facing modes.
+  // - Global              → scopeType=global,        mode=include, ids=[]
+  // - Specific (1)        → scopeType=single_country, mode=include, ids=[…]
+  // - Specific (2+)       → scopeType=multi_country,  mode=include, ids=[…]
+  // - Global except (any) → scopeType=global,        mode=exclude, ids=[…]
+  const derived = useMemo(() => {
+    if (!scope) {
+      return {
+        scopeType: "global" as const,
+        jurisdictionMode: "include" as const,
+        jurisdictionIds: [] as string[],
+      };
+    }
+    const ids = scope.codes
+      .map((c) => codeToId.get(c))
+      .filter((v): v is string => Boolean(v));
+    if (scope.mode === "exclude") {
+      return {
+        scopeType: "global" as const,
+        jurisdictionMode: "exclude" as const,
+        jurisdictionIds: ids,
+      };
+    }
+    return {
+      scopeType:
+        ids.length <= 1 ? ("single_country" as const) : ("multi_country" as const),
+      jurisdictionMode: "include" as const,
+      jurisdictionIds: ids,
+    };
+  }, [scope, codeToId]);
+
+  // Block submit until the picker's choice is internally consistent.
+  const scopeReady =
+    !scope ||
+    scope.codes.length > 0 ||
+    scope.mode === "exclude"; // exclude with 0 codes == global, allowed
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,7 +94,6 @@ export default function NewProjectPage() {
     setError("");
 
     try {
-      // Ensure user exists
       const userRes = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -27,14 +101,15 @@ export default function NewProjectPage() {
       });
       const user = await userRes.json();
 
-      // Create project
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
           commercialOwnerId: user.id,
-          scopeType,
+          scopeType: derived.scopeType,
+          jurisdictionMode: derived.jurisdictionMode,
+          jurisdictionIds: derived.jurisdictionIds,
         }),
       });
 
@@ -45,8 +120,8 @@ export default function NewProjectPage() {
 
       const project = await res.json();
       router.push(`/projects/${project.id}`);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError((err as Error).message);
     } finally {
       setSubmitting(false);
     }
@@ -68,18 +143,16 @@ export default function NewProjectPage() {
             helpText="The product or asset being assessed."
           />
 
-          <Select
-            label="Deployment Scope"
-            name="scopeType"
-            value={scopeType}
-            onChange={(e) => setScopeType(e.target.value)}
-            required
-            options={[
-              { value: "single_country", label: "Single country" },
-              { value: "multi_country", label: "Multi-country" },
-              { value: "global", label: "Global" },
-            ]}
-          />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-ey-light-gray">
+              Deployment Scope
+              <span className="text-frame-red ml-1">*</span>
+            </label>
+            <JurisdictionPicker value={scope} onChange={setScope} />
+            <p className="text-xs text-ey-sonic-silver">
+              Current scope: <span className="text-ey-light-gray">{summarizeScope(scope)}</span>
+            </p>
+          </div>
 
           <div className="border-t border-ey-sonic-silver/30 pt-6">
             <h3 className="text-ey-light-gray text-sm font-medium mb-4">
@@ -113,10 +186,10 @@ export default function NewProjectPage() {
           )}
 
           <div className="flex gap-3 justify-end">
-            <a href="/">
+            <Link href="/projects">
               <Button variant="secondary">Cancel</Button>
-            </a>
-            <Button type="submit" disabled={submitting}>
+            </Link>
+            <Button type="submit" disabled={submitting || !scopeReady}>
               {submitting ? "Creating..." : "Create Project"}
             </Button>
           </div>

@@ -22,6 +22,15 @@ enum ScopeType {
   global
 }
 
+// Whether the listed jurisdictions on a Project define the SCOPE (the
+// deployment is in those countries) or the EXCEPTIONS (the deployment is
+// global except those countries). Mirrors the JurisdictionPicker UI's
+// "Specific countries" vs "Global except" modes.
+enum JurisdictionMode {
+  include
+  exclude
+}
+
 enum SectionStateEnum {
   drafting
   released
@@ -223,6 +232,7 @@ model Project {
   commercialOwnerId String       @map("commercial_owner_id") @db.Uuid
   status           ProjectStatus @default(drafting)
   scopeType        ScopeType     @map("scope_type")
+  jurisdictionMode JurisdictionMode @default(include) @map("jurisdiction_mode")
   repoUrl          String?       @map("repo_url")
   repoLastScanSha  String?       @map("repo_last_scan_sha")
   repoLastScanAt   DateTime?     @map("repo_last_scan_at")

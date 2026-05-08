@@ -53,8 +53,8 @@ export default function Sidebar() {
 
   return (
     <aside className="w-60 flex-shrink-0 border-r border-ey-dark-gray bg-ey-black flex flex-col">
-      <div className="px-4 py-5 border-b border-ey-dark-gray">
-        <Link href="/" className="flex items-end gap-3">
+      <div className="px-4 py-5 border-b border-ey-dark-gray flex items-end gap-3">
+        <Link href="/" aria-label="Dashboard">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/Brand/EY_Logo_Beam_C_CMYK_Dark.svg"
@@ -62,6 +62,12 @@ export default function Sidebar() {
             width={32}
             height={32}
           />
+        </Link>
+        <Link
+          href="/about"
+          aria-label="About ARC"
+          className="rounded transition-opacity hover:opacity-80"
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/Brand/arc.svg"
