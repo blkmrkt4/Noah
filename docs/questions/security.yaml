@@ -7,7 +7,7 @@ description: |
   rating, mandatory controls keyed to data classification, vulnerability
   testing, Security Certification, Supplier Risk Assurance for vendors and
   cloud providers, the InfoSec AI Assessment branch, and the security
-  exception process. Reviewer domain: Security Reviewer.
+  exception process. Reviewer domain: InfoSec Reviewer.
 
 questions:
 
@@ -309,7 +309,7 @@ questions:
         value: true
 
   # ─────────────────────────────────────────────────────
-  # NOTE: more questions to be added by Question Authors
+  # NOTE: more questions to be added by Policy Authors
   # ─────────────────────────────────────────────────────
   # Areas flagged for expansion:
   # - Per-control mandatory checklist keyed to risk rating (full ISMS control map)

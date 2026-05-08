@@ -10,12 +10,19 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:seed": "tsx scripts/seed-corpus.ts"
+    "db:seed": "tsx scripts/seed-corpus.ts",
+    "db:seed-admin": "tsx scripts/seed-admin.ts",
+    "db:seed-jurisdictions": "tsx scripts/seed-jurisdictions.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@supabase/supabase-js": "^2.105.3",
+    "csv-parse": "^6.2.1",
+    "exceljs": "^4.4.0",
+    "mammoth": "^1.12.0",
     "next": "16.2.4",
+    "pdf-parse": "^2.4.5",
     "pg": "^8.20.0",
     "prisma": "^7.8.0",
     "react": "19.2.4",
@@ -25,6 +32,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.4.2",

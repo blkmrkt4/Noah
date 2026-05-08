@@ -148,6 +148,28 @@ enum AiPrepopulationPriority {
   none
 }
 
+enum PolicyFormat {
+  pdf
+  docx
+  txt
+  md
+  xlsx
+  csv
+}
+
+enum RepoScanKind {
+  technical_description
+  reviewer_risk_review
+  question_prepopulation
+}
+
+enum RepoScanStatus {
+  pending
+  running
+  succeeded
+  failed
+}
+
 // ─── Models ──────────────────────────────────────────────────────────────────
 
 model User {
@@ -165,16 +187,31 @@ model User {
   reviewerRoles  Reviewer[]
   attestedAnswers Answer[]
   publishedQuestionVersions QuestionVersion[]
+  approvedMoreInfos QuestionMoreInfo[] @relation("MoreInfoApprover")
+  triggeredScanRuns PolicyScanRun[]    @relation("ScanRunTrigger")
 
   @@map("users")
 }
 
-model Jurisdiction {
-  id   String           @id @default(uuid()) @db.Uuid
-  code String           @unique
-  name String
-  tier JurisdictionTier
+model Region {
+  id           String  @id @default(uuid()) @db.Uuid
+  name         String  @unique
+  shortName    String  @unique @map("short_name")
+  displayOrder Int     @default(0) @map("display_order")
 
+  jurisdictions Jurisdiction[]
+
+  @@map("regions")
+}
+
+model Jurisdiction {
+  id         String           @id @default(uuid()) @db.Uuid
+  code       String           @unique
+  name       String
+  tier       JurisdictionTier
+  regionId   String?          @map("region_id") @db.Uuid
+
+  region               Region?              @relation(fields: [regionId], references: [id])
   projectJurisdictions ProjectJurisdiction[]
 
   @@map("jurisdictions")
@@ -186,6 +223,9 @@ model Project {
   commercialOwnerId String       @map("commercial_owner_id") @db.Uuid
   status           ProjectStatus @default(drafting)
   scopeType        ScopeType     @map("scope_type")
+  repoUrl          String?       @map("repo_url")
+  repoLastScanSha  String?       @map("repo_last_scan_sha")
+  repoLastScanAt   DateTime?     @map("repo_last_scan_at")
   createdAt        DateTime      @default(now()) @map("created_at")
   submittedAt      DateTime?     @map("submitted_at")
 
@@ -193,7 +233,9 @@ model Project {
   jurisdictions    ProjectJurisdiction[]
   answers          Answer[]
   documents        Document[]
+  links            ProjectLink[]
   repoFindings     RepoFinding[]
+  repoScanRuns     RepoScanRun[]
   docExtractions   DocExtraction[]
   discrepancies    Discrepancy[]
   delegations      Delegation[]
@@ -204,6 +246,50 @@ model Project {
   policySnapshots  PolicySnapshot[]
 
   @@map("projects")
+}
+
+// Free-form project links pasted by the Commercial Owner. Not AI-processed —
+// just URLs (and optional labels) reviewers can follow. Listed alongside
+// uploaded documents in the questionnaire's "Intake Documents and Links" view.
+model ProjectLink {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @map("project_id") @db.Uuid
+  url       String
+  label     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_links")
+}
+
+// One row per scan invocation per kind. Latest succeeded row per (projectId, kind)
+// is the live result; older rows stay as audit. The output JSON shape varies by
+// kind:
+//   - technical_description: structured per arc_repo_prompt_technical.md
+//   - reviewer_risk_review:  { markdown, generatedAt, commitSha }
+//   - question_prepopulation: { answersWritten, questionsConsidered,
+//                               lowConfidenceSkipped }
+model RepoScanRun {
+  id              String         @id @default(uuid()) @db.Uuid
+  projectId       String         @map("project_id") @db.Uuid
+  kind            RepoScanKind
+  status          RepoScanStatus @default(pending)
+  commitSha       String?        @map("commit_sha")
+  output          Json?
+  errorMessage    String?        @map("error_message")
+  // Owner-initiated cancel signal. The prepop loop polls this flag once per
+  // iteration and exits early when set. Cancel is best-effort — a Sonnet
+  // call already in flight will still complete, but no new calls fire.
+  cancelRequested Boolean        @default(false) @map("cancel_requested")
+  triggeredBy     String?        @map("triggered_by") @db.Uuid
+  startedAt       DateTime       @default(now()) @map("started_at")
+  finishedAt      DateTime?      @map("finished_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId, kind])
+  @@map("repo_scan_runs")
 }
 
 model ProjectJurisdiction {
@@ -223,9 +309,10 @@ model Section {
   displayName  String @map("display_name")
   displayOrder Int    @map("display_order")
 
-  questions     Question[]
-  sectionStates SectionState[]
-  reviews       Review[]
+  questions             Question[]
+  sectionStates         SectionState[]
+  reviews               Review[]
+  policyBindings        PolicyDocSection[]
 
   @@map("sections")
 }
@@ -246,10 +333,14 @@ model SectionState {
 }
 
 model Question {
-  id        String   @id @default(uuid()) @db.Uuid
-  slug      String   @unique
-  sectionId String   @map("section_id") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at")
+  id               String   @id @default(uuid()) @db.Uuid
+  slug             String   @unique
+  sectionId        String   @map("section_id") @db.Uuid
+  // When false, no guidance snippet is generated, scanned, or shown for this
+  // question. Used for trivial fields ("name your product", dates) that do
+  // not benefit from policy guidance.
+  guidanceRequired Boolean  @default(true) @map("guidance_required")
+  createdAt        DateTime @default(now()) @map("created_at")
 
   section  Section          @relation(fields: [sectionId], references: [id])
   versions QuestionVersion[]
@@ -277,6 +368,8 @@ model QuestionVersion {
   answers     Answer[]
   parentDependencies  QuestionDependency[] @relation("DependencyChild")
   childDependencies   QuestionDependency[] @relation("DependencyParent")
+  moreInfos           QuestionMoreInfo[]
+  policyExclusions    QuestionPolicyExclusion[]
 
   @@unique([questionId, version])
   @@map("question_versions")
@@ -543,23 +636,113 @@ model Notification {
 model PolicyDoc {
   id                String @id @default(uuid()) @db.Uuid
   title             String
-  domain            ReviewDomain
   jurisdictionScope Json?  @map("jurisdiction_scope")
+  description       String?
 
-  versions PolicyVersion[]
+  versions            PolicyVersion[]
+  sectionBindings     PolicyDocSection[]
+  questionExclusions  QuestionPolicyExclusion[]
 
   @@map("policy_docs")
 }
 
-model PolicyVersion {
-  id          String   @id @default(uuid()) @db.Uuid
+// A PolicyDoc can be bound to one or more Sections. Authored at upload time
+// (with optional cross-category reuse). isPrimary nominates a default section
+// for navigation/display when listing the policy without a section context.
+model PolicyDocSection {
   policyDocId String   @map("policy_doc_id") @db.Uuid
+  sectionId   String   @map("section_id") @db.Uuid
+  isPrimary   Boolean  @default(false) @map("is_primary")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  policyDoc PolicyDoc @relation(fields: [policyDocId], references: [id], onDelete: Cascade)
+  section   Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@id([policyDocId, sectionId])
+  @@map("policy_doc_sections")
+}
+
+enum MoreInfoStatus {
+  pending_review
+  approved
+  rejected
+}
+
+// The "more info" snippet a Commercial Owner sees when they click the (i)
+// button on a question. One row per scan attempt; the latest with status =
+// approved is the live snippet for the question. Old approvals stay as audit.
+model QuestionMoreInfo {
+  id                    String         @id @default(uuid()) @db.Uuid
+  questionVersionId     String         @map("question_version_id") @db.Uuid
+  sourcePolicyVersionId String?        @map("source_policy_version_id") @db.Uuid
+  body                  String
+  status                MoreInfoStatus @default(pending_review)
+  scanRunId             String?        @map("scan_run_id") @db.Uuid
+  approvedById          String?        @map("approved_by_id") @db.Uuid
+  approvedAt            DateTime?      @map("approved_at")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+
+  questionVersion QuestionVersion @relation(fields: [questionVersionId], references: [id])
+  sourcePolicy    PolicyVersion?  @relation(fields: [sourcePolicyVersionId], references: [id])
+  scanRun         PolicyScanRun?  @relation(fields: [scanRunId], references: [id])
+  approvedBy      User?           @relation("MoreInfoApprover", fields: [approvedById], references: [id])
+
+  @@map("question_more_info")
+}
+
+// Audit row for a scan invocation. Captures who triggered, what scope, and
+// what was produced.
+model PolicyScanRun {
+  id            String    @id @default(uuid()) @db.Uuid
+  triggeredById String    @map("triggered_by_id") @db.Uuid
+  startedAt     DateTime  @default(now()) @map("started_at")
+  completedAt   DateTime? @map("completed_at")
+  scope         Json
+  itemsProduced Int       @default(0) @map("items_produced")
+  errorMessage  String?   @map("error_message")
+
+  triggeredBy User              @relation("ScanRunTrigger", fields: [triggeredById], references: [id])
+  moreInfos   QuestionMoreInfo[]
+
+  @@map("policy_scan_runs")
+}
+
+// Maps a Section to the PolicyDocs the Policy Author considers required (or
+// informative) for that section. Required policies must be uploaded before
+// the section can be scanned.
+// Subtractive override at the question grain. A QuestionVersion *normally*
+// inherits all PolicyDocs bound to its Section via PolicyDocSection. An
+// exclusion row removes one of those bindings for this specific question — used
+// when a policy muddies an extraction or doesn't apply at the question level.
+// Pinned to QuestionVersion (not Question) so re-versioning forces a re-confirm.
+model QuestionPolicyExclusion {
+  questionVersionId String   @map("question_version_id") @db.Uuid
+  policyDocId       String   @map("policy_doc_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  questionVersion QuestionVersion @relation(fields: [questionVersionId], references: [id], onDelete: Cascade)
+  policyDoc       PolicyDoc       @relation(fields: [policyDocId], references: [id], onDelete: Cascade)
+
+  @@id([questionVersionId, policyDocId])
+  @@map("question_policy_exclusions")
+}
+
+model PolicyVersion {
+  id          String        @id @default(uuid()) @db.Uuid
+  policyDocId String        @map("policy_doc_id") @db.Uuid
   version     Int
   content     String
-  effectiveAt DateTime @map("effective_at")
+  effectiveAt DateTime      @map("effective_at")
+  filename    String?
+  uri         String?
+  mimeType    String?       @map("mime_type")
+  fileFormat  PolicyFormat? @map("file_format")
+  uploadedAt  DateTime      @default(now()) @map("uploaded_at")
 
   policyDoc PolicyDoc        @relation(fields: [policyDocId], references: [id])
   snapshots PolicySnapshot[]
+  moreInfos QuestionMoreInfo[]
 
   @@unique([policyDocId, version])
   @@map("policy_versions")
@@ -576,4 +759,59 @@ model PolicySnapshot {
 
   @@unique([projectId, policyVersionId])
   @@map("policy_snapshots")
+}
+
+// ─── Admin / LLM configuration ──────────────────────────────────────────────
+
+model AdminSetting {
+  key         String   @id
+  value       String
+  isSensitive Boolean  @default(false) @map("is_sensitive")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("admin_settings")
+}
+
+model ModelLibrary {
+  id                 String   @id @default(uuid()) @db.Uuid
+  openrouterModelId  String   @unique @map("openrouter_model_id")
+  name               String
+  description        String?
+  temperature        Float    @default(0.2)
+  maxTokens          Int      @default(4096) @map("max_tokens")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  binds ActivityBind[]
+
+  @@map("model_library")
+}
+
+model PromptLibrary {
+  id                  String   @id @default(uuid()) @db.Uuid
+  slug                String   @unique
+  name                String
+  description         String?
+  systemPrompt        String   @map("system_prompt")
+  userPromptTemplate  String   @map("user_prompt_template")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  binds ActivityBind[]
+
+  @@map("prompt_library")
+}
+
+model ActivityBind {
+  slug      String   @id
+  name      String
+  modelId   String   @map("model_id") @db.Uuid
+  promptId  String   @map("prompt_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  model  ModelLibrary  @relation(fields: [modelId], references: [id])
+  prompt PromptLibrary @relation(fields: [promptId], references: [id])
+
+  @@map("activity_binds")
 }

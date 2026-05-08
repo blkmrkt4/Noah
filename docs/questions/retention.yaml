@@ -144,7 +144,7 @@ questions:
         values: [multi_country, regional, global]
 
   # ─────────────────────────────────────────────────────
-  # NOTE: more questions to be added by Question Authors
+  # NOTE: more questions to be added by Policy Authors
   # ─────────────────────────────────────────────────────
   # Areas flagged for expansion:
   # - Per-data-element retention table (more granular than per-data-type)

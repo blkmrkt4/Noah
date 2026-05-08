@@ -1,56 +1,66 @@
 # ARC Build Plan
 
-> **Load when:** starting new work and need to know which phase to pick up, or when you hit a design question and want to check whether it's deliberately unsettled vs. a real decision to make.
+> **Load when:** picking up new work and need to know what's already built vs. what's still open, or when you hit a design question and want to check whether it's deliberately unsettled vs. a real decision to make.
 
-This file holds the phase-by-phase build plan and the list of design questions that are deliberately open. It complements `CLAUDE.md` (always-on conventions and routing) and `prd.md` (product vision and scope).
+This file holds the build status and the list of design questions that are deliberately open. It complements `CLAUDE.md` (always-on conventions and routing) and `prd.md` (product vision and scope).
 
-## What to build first
+## Status — Phases 1-6 merged
 
-### Phase 1 — schema and corpus ingestion (no UI)
+Commit `84c28b2 ARC Phase 1-6: Full risk attestation system` brought the structural skeleton end-to-end. What's in the repo today:
 
-1. Implement the data model from `data-model.md` exactly. Migrations for every entity.
-2. Implement the YAML question corpus loader. It should:
-   - Read `questions/_schema.yaml` to validate every question file.
-   - Load each section file, creating Question + QuestionVersion rows.
-   - Load QuestionDependency rows from each question's `activates_when` block.
-   - Load Section rows from a `_sections.yaml` registry (you'll need to create this).
-3. Implement Pattern loading from `questions/_patterns.yaml` (you'll need to create this — V1 ships with the four Patterns named in `prd.md` § 9).
-4. Implement PolicyDoc loading from a `policies/` directory (out of scope for the spec phase but in scope for the build).
+### Phase 1 — schema and corpus ingestion
+
+- Prisma schema implementing `data-model.md` entities (`prisma/schema.prisma`, generated client at `src/generated/prisma/`).
+- YAML corpus loader (`scripts/seed-corpus.ts`) reading `docs/questions/_schema.yaml`, every section file, `_sections.yaml`, `_patterns.yaml`, and `QuestionDependency` rows from each question's `activates_when` block.
+- PolicyDoc loading from a `docs/policies/` directory is **not yet wired** — see open items below.
 
 ### Phase 2 — questionnaire backend
 
-5. Project creation, foundational answer flow, dependency-driven activation.
-6. Document upload, ingestion pipeline producing DocExtractions.
-7. GitHub repo ingestion producing RepoFindings.
-8. AI pre-population producing system_inferred Answers with citations.
-9. Owner attestation flow (accept / edit, Discrepancy logging on edit).
-10. Section state machine (Drafting → Released → Under Review → Cleared).
+- Project creation, foundational answer flow, dependency-driven activation (`/api/projects`, `/api/projects/[id]/answers`).
+- Document upload + ingestion → DocExtractions (`/api/projects/[id]/documents`, `/api/projects/[id]/documents/upload`).
+- GitHub repo ingestion → RepoFindings (`/api/projects/[id]/repo`, `src/lib/repo-scanner.ts`).
+- AI pre-population producing `system_inferred` Answers with citations (`/api/projects/[id]/ingest`, `src/lib/ingestion.ts`).
+- Owner attestation flow with Discrepancy logging on edit.
+- Section state machine (Drafting → Released → Under Review → Cleared) (`/api/projects/[id]/sections/[sectionId]`, `/api/projects/[id]/state`).
 
 ### Phase 3 — review backend
 
-11. Review opening on Section Release / Project Submission.
-12. Clarification flow (open → in_clarification flag flips on Answer → Responded → Resolved).
-13. Disposition issuance and Project Disposition computation.
-14. PolicySnapshot pinning at Project Submission.
+- Review opening on Section Release / Project Submission (`/api/projects/[id]/reviews`, `/api/reviews/[reviewId]`).
+- Clarification flow with `in_clarification` flag (`/api/reviews/[reviewId]/clarifications`, `/api/clarifications/[clarificationId]`).
+- Disposition issuance and Project Disposition computation (`/api/projects/[id]/submit`).
+- PolicySnapshot pinning at Project Submission.
 
 ### Phase 4 — pattern matching
 
-15. Continuous PatternMatch evaluation as Answers change.
-16. Fast-track determination at Project Submission via reviewer_waivers.
+- Continuous PatternMatch evaluation as Answers change.
+- Fast-track determination at Project Submission via `reviewer_waivers`.
 
 ### Phase 5 — collaboration and notifications
 
-17. Delegation (Section Lead, Question Collaborator) with appropriate authority levels.
-18. Threaded discussion on Answer / Review / Clarification / Delegation.
-19. Notification batching with digest_payload.
-20. Urgent-override for terminal events.
+- Section Lead and Question Collaborator delegation (`/api/projects/[id]/delegations`).
+- Threaded discussion on Answer / Review / Clarification / Delegation (`/api/threads/[threadId]/comments`, `/api/projects/[id]/answers/[answerId]/thread`).
+- Notification batching with `digest_payload` (`/api/notifications`).
+- Urgent-override for terminal events.
 
 ### Phase 6 — UI
 
-21. Commercial Owner project workspace (foundational → triage → sections).
-22. Reviewer review workspace (per-Section, per-domain).
-23. Question Author corpus authoring tool.
-24. Admin / Question Author Pattern editor.
+- Commercial Owner workspace: dashboard (`/`), projects list (`/projects`), project create (`/projects/new`), project hub (`/projects/[id]`), questionnaire (`/projects/[id]/questionnaire`).
+- Reviewer workspace (`/projects/[id]/review`).
+- Corpus reference (`/corpus`).
+- Admin (`/admin`, `/admin/models`, `/admin/prompts`, `/admin/settings`).
+
+## What's still open — fill-in and refinement
+
+Visible gaps in the merged build. None of these are phase work; each is a small, scoped fix.
+
+1. **Brand mark not wired.** The sidebar uses a typographic "EY" instead of the SVG primary mark. The supplied SVGs are colored for light backgrounds (off-black wordmark) so they don't render correctly on the dark sidebar — a reverse-colorway asset or a local recolor is needed before this can be wired. See `design/components/icon-rail.md`.
+2. **Sidebar ≠ icon-rail spec.** Implementation is a static 240px sidebar; spec describes a 56px collapsed / 240px expanded rail with hover-expand, pin button, instant tooltips, badges. Decide whether to rewrite Sidebar to spec or update the spec to match what shipped.
+3. **Empty-state SVGs unused.** `design/assets/empty-queue.svg`, `empty-search.svg`, `empty-submissions.svg` are not referenced anywhere in `src/`.
+4. **Typography unsettled.** `globals.css` declares `font-family: "EYInterstate", Arial, ...` but no font files are shipped, so the cascade falls to Arial. `next/font` loads Geist into CSS variables but globals overrides it. Pick one and align.
+5. **Warning amber missing.** `design/design.md` reserves `#FFC107` as warning amber (after losing the accent slot to `#FFE600`), but no `--warning-amber` token exists in `globals.css`.
+6. **PolicyDoc loader.** Phase 1 spec called for loading from `docs/policies/`; not yet wired.
+7. **Corpus depth.** Section YAMLs ship the structural skeleton plus the highest-leverage questions; deeper question sets (e.g., AIRA's full ~50 questions) are explicitly Policy Author work, not Claude work.
+8. **Project name in design system.** `design/design.md` still refers to the project as "Noah2"; the product is "EY ARC" everywhere else.
 
 ## Things that are deliberately unsettled
 

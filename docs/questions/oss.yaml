@@ -5,7 +5,7 @@ description: |
   Open Source Software review. Activates when software.uses_oss is true.
   Covers component listing, license compatibility, copyleft exposure,
   attribution, MEND scan results, EY OSS Whitelist alignment, and the
-  fast-lane vs full-review path. Reviewer engagement: Security Reviewer
+  fast-lane vs full-review path. Reviewer engagement: InfoSec Reviewer
   (InfoSec validation), Independence Reviewer (Independence Framework
   statements), Contracts (GCO license review).
 
@@ -192,7 +192,7 @@ questions:
         value: true
 
   # ─────────────────────────────────────────────────────
-  # NOTE: more questions to be added by Question Authors
+  # NOTE: more questions to be added by Policy Authors
   # ─────────────────────────────────────────────────────
   # Areas flagged for expansion:
   # - Per-license obligation checklist

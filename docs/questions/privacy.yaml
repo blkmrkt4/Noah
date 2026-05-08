@@ -209,9 +209,9 @@ questions:
         value: client_information
 
   # ─────────────────────────────────────────────────────
-  # NOTE: more questions to be added by Question Authors
+  # NOTE: more questions to be added by Policy Authors
   # ─────────────────────────────────────────────────────
-  # The following branches are flagged for expansion by Question Authors:
+  # The following branches are flagged for expansion by Policy Authors:
   # - Detailed personal data flow mapping per data element
   # - Per-jurisdiction local privacy law overlay
   # - Sub-processor chain documentation

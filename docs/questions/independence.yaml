@@ -177,7 +177,7 @@ questions:
   # ─────────────────────────────────────────────────────
   # NOTE: "Channel One" was mentioned by the product sponsor as an example of
   # a restricted-client classification. The exact rule is not encoded in the
-  # source materials available to V1. Question Author should add the explicit
+  # source materials available to V1. Policy Author should add the explicit
   # Channel One question once the firm's classification rule is confirmed.
 
   - slug: independence.restricted_channel.flag
@@ -190,7 +190,7 @@ questions:
       - {value: unknown, label: "Unknown — Reviewer will check"}
     required: false
     ai_prepopulation_priority: none
-    help_text: "Awaiting confirmation of firm-internal classification rule. Question Author to expand."
+    help_text: "Awaiting confirmation of firm-internal classification rule. Policy Author to expand."
     activates_when:
       - parent_slug: client.is_audit_client
         condition: equals

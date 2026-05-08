@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Sidebar from "@/components/Sidebar";
+import WorkspaceHeader from "@/components/WorkspaceHeader";
+import { PersonaProvider } from "@/components/PersonaContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,40 +31,14 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-ey-black text-white">
-        <header className="border-b border-ey-dark-gray">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-ey-yellow font-bold text-2xl tracking-tight">
-                EY
-              </span>
-              <span className="text-ey-light-gray text-sm font-medium tracking-wide uppercase">
-                ARC
-              </span>
-            </div>
-            <nav className="flex items-center gap-6 text-sm text-ey-light-gray">
-              <a
-                href="/"
-                className="hover:text-ey-yellow transition-colors"
-              >
-                Dashboard
-              </a>
-              <a
-                href="/projects"
-                className="hover:text-ey-yellow transition-colors"
-              >
-                Projects
-              </a>
-              <a
-                href="/corpus"
-                className="hover:text-ey-yellow transition-colors"
-              >
-                Corpus
-              </a>
-            </nav>
+      <body className="min-h-full flex bg-ey-black text-white">
+        <PersonaProvider>
+          <Sidebar />
+          <div className="flex-1 min-w-0 flex flex-col">
+            <WorkspaceHeader />
+            <main className="flex-1 overflow-auto">{children}</main>
           </div>
-        </header>
-        <main className="flex-1">{children}</main>
+        </PersonaProvider>
       </body>
     </html>
   );

@@ -384,7 +384,7 @@ questions:
         values: [third_party, combination]
 
   # ─────────────────────────────────────────────────────
-  # NOTE: more questions to be added by Question Authors
+  # NOTE: more questions to be added by Policy Authors
   # ─────────────────────────────────────────────────────
   # Areas flagged for expansion:
   # - Per-system-type deeper validation (generative vs predictive vs agent)

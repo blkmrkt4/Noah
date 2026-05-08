@@ -6,7 +6,7 @@ import { ReactNode } from "react";
 
 export function PageTitle({ children }: { children: ReactNode }) {
   return (
-    <h1 className="text-ey-yellow text-3xl font-bold mb-6 w-full">{children}</h1>
+    <h1 className="text-ey-yellow text-3xl font-bold mb-6">{children}</h1>
   );
 }
 
@@ -87,7 +87,7 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
+      className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
     >
       {children}
     </button>

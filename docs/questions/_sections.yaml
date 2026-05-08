@@ -4,7 +4,7 @@
 
 sections:
   - slug: intake
-    display_name: "Intake & Foundations"
+    display_name: "Foundation Questions"
     display_order: 1
     description: "Foundational questions every project answers. Entry points to the dependency DAG."
 
@@ -32,7 +32,7 @@ sections:
     review_domain: independence
 
   - slug: security
-    display_name: "Security"
+    display_name: "InfoSec"
     display_order: 6
     description: "InfoSec assessment, security certification, SRA, AI InfoSec."
     review_domain: security

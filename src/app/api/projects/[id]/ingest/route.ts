@@ -39,8 +39,10 @@ export async function POST(
   }
 
   if (actions?.includes("pre_populate")) {
-    const count = await prePopulateAnswers(projectId);
-    results.answers_pre_populated = count;
+    const stats = await prePopulateAnswers(projectId);
+    results.answers_pre_populated = stats.answersWritten;
+    results.questions_considered = stats.questionsConsidered;
+    results.low_confidence_skipped = stats.lowConfidenceSkipped;
   }
 
   return NextResponse.json({ status: "completed", results });

@@ -178,7 +178,7 @@ questions:
         value: client_provided
 
   # ─────────────────────────────────────────────────────
-  # NOTE: more questions to be added by Question Authors
+  # NOTE: more questions to be added by Policy Authors
   # ─────────────────────────────────────────────────────
   # Areas flagged for expansion:
   # - Specific contract clause checklist (data ownership, IP assignment, audit rights, exit, indemnity)

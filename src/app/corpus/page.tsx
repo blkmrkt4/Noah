@@ -54,7 +54,7 @@ export default function CorpusPage() {
     : null;
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="px-6 py-8 max-w-7xl">
       <PageTitle>Question Corpus</PageTitle>
 
       {/* Search */}

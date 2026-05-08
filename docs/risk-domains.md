@@ -5,7 +5,7 @@
 This file describes each risk domain ARC routes to. For each domain, we capture:
 
 - **What it reviews** — the substantive scope.
-- **Reviewer type** — which of the five Reviewer types (Jurisdictional, Independence, Privacy, Brand, Security) handles this domain.
+- **Reviewer type** — which of the five Reviewer types (Jurisdictional, Independence, Privacy, Brand, InfoSec) handles this domain.
 - **Triggering questions** — which foundational/triage answers activate this domain's questions.
 - **Section in the corpus** — the YAML file in `questions/` that holds its questions.
 - **Underlying EY function** — the human/process this domain represents.
@@ -57,7 +57,7 @@ EY Global PIA Procedure; Personal Data Protection Global Policy; Data Protection
 Whether the product contains AI; what kind (predictive, generative, agentic, multi-agent); regulatory tier under EU AI Act and equivalents; provider vs deployer role; lifecycle stage; testing evidence; monitoring plans; periodic review cadence; and whether it qualifies for green-lane via DSO data risk criteria.
 
 **Reviewer type**
-Privacy Reviewer (DSO data risk overlay) + Security Reviewer (InfoSec AI Assessment) + a dedicated AI review path that, in V1, is treated as a sub-domain of Privacy and Security based on EY's framework structure. Claude Code: see open question on whether to introduce a dedicated `AI Reviewer` type or keep it routed through Privacy and Security as it is in EY's existing AIRA/AIQRM model.
+Privacy Reviewer (DSO data risk overlay) + InfoSec Reviewer (AI Assessment) + a dedicated AI review path that, in V1, is treated as a sub-domain of Privacy and InfoSec based on EY's framework structure. Claude Code: see open question on whether to introduce a dedicated `AI Reviewer` type or keep it routed through Privacy and InfoSec as it is in EY's existing AIRA/AIQRM model.
 
 **Triggering questions**
 - `ai.exists = true`
@@ -117,13 +117,13 @@ EYG Independence Policy; BRIDGE; GIS / GMS; SORT; country-specific independence 
 
 ---
 
-## Security (InfoSec + SRA)
+## InfoSec (incl. SRA)
 
 **What it reviews**
 Whether technical security controls match data sensitivity. Includes intrinsic risk rating, mandatory controls by risk class, vulnerability testing, security certification, supplier risk for vendors and cloud providers, and any required security exceptions.
 
 **Reviewer type**
-Security Reviewer (firm-level); reads both attested answers and RepoFindings.
+InfoSec Reviewer (firm-level); reads both attested answers and RepoFindings.
 
 **Triggering questions**
 - Always activates (every project that handles EY information is in scope per the Global Information Security Policy).
@@ -193,7 +193,7 @@ EY Branding (Digital Assets); EY UX Style Guide; EY Experience Design (XD); EY D
 Use of open source software components. License compatibility, attribution requirements, copyleft exposure, and component listing accuracy. Distinguishes standalone OSS/SaaS (faster path) from embedded OSS in EY-distributed code.
 
 **Reviewer type**
-Routed via Security Reviewer (InfoSec validation), Independence Reviewer (Independence Framework statements), and Contracts (GCO license review) where applicable. Architecture also engages.
+Routed via InfoSec Reviewer (validation), Independence Reviewer (Independence Framework statements), and Contracts (GCO license review) where applicable. Architecture also engages.
 
 **Triggering questions**
 - `software.uses_oss = true`
@@ -223,7 +223,7 @@ EY OSS process; OSS Whitelist; MEND scanning; Independence Framework statements 
 Software not part of the standard approved route. Hinges on who is obtaining the license and what data types are shared, which determines downstream review engagement.
 
 **Reviewer type**
-Routed via Security Reviewer (Security Consulting where required), Independence Reviewer (BRIDGE trigger), Contracts (GCO license review where EY is licensee), Privacy Reviewer (Data Protection where PII shared).
+Routed via InfoSec Reviewer (Security Consulting where required), Independence Reviewer (BRIDGE trigger), Contracts (GCO license review where EY is licensee), Privacy Reviewer (Data Protection where PII shared).
 
 **Triggering questions**
 - `software.is_non_standard = true`
@@ -286,7 +286,7 @@ GCO Contracts; Software Assets in the EY Network guidance; Knowledge Sharing Agr
 Retention schedule for each data type; ownership of deletion/archive decisions; legal hold mechanisms; logs vs business data separation; country- or client-specific deletion rules; post-production lifecycle (patching, retraining, country expansion, decommissioning).
 
 **Reviewer type**
-Privacy Reviewer (data retention regulatory aspects); Security Reviewer (log retention security aspects).
+Privacy Reviewer (data retention regulatory aspects); InfoSec Reviewer (log retention security aspects).
 
 **Triggering questions**
 - Always activates.
@@ -316,7 +316,7 @@ Data Retention review category; legal discovery, regulatory compliance, and cybe
 Business criticality of the application and continuity/recovery requirements.
 
 **Reviewer type**
-Currently routed via Security Reviewer in the V1 model; in EY today this is run by the Business Continuity team. Claude Code: confirm whether to introduce a dedicated BIA Reviewer type.
+Currently routed via InfoSec Reviewer in the V1 model; in EY today this is run by the Business Continuity team. Claude Code: confirm whether to introduce a dedicated BIA Reviewer type.
 
 **Triggering questions**
 - Always activates.
@@ -373,12 +373,12 @@ The following compact matrix shows which sections activate based on a few founda
 
 | Foundational answer | Activates |
 |---|---|
-| `data.classification.highest_tier ∈ {C3, C4}` | Privacy (full PIA branch), Security (elevated controls), Contracts (rights-to-use branch) |
+| `data.classification.highest_tier ∈ {C3, C4}` | Privacy (full PIA branch), InfoSec (elevated controls), Contracts (rights-to-use branch) |
 | `data.types.includes_personal_data = true` | Privacy (full PIA branch + DPIA evaluation), AI (DSO data risk if AI present) |
 | `data.crossborder.transfer_paths != []` | Privacy (cross-border transfer branch + each Jurisdictional Reviewer for transfer endpoints) |
-| `ai.exists = true` | AI (AIRA + AIQRM), Privacy (DSO overlay), Security (InfoSec AI Assessment) |
+| `ai.exists = true` | AI (AIRA + AIQRM), Privacy (DSO overlay), InfoSec (AI Assessment) |
 | `client.is_audit_client = true` | Independence (audit-client permissibility branch) |
-| `vendor.has_third_party_relationship = true` | Independence (BRIDGE branch), Contracts (vendor contract branch), Security (SRA branch) |
+| `vendor.has_third_party_relationship = true` | Independence (BRIDGE branch), Contracts (vendor contract branch), InfoSec (SRA branch) |
 | `software.uses_oss = true` | OSS (full branch) |
 | `software.is_non_standard = true` | NSS (full branch) |
 | `audience.includes_public = true` or `audience.includes_external_clients = true` | Brand, Accessibility, Privacy (additional) |

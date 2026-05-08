@@ -15,7 +15,9 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
 import { parse } from "yaml";
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+loadEnv({ path: ".env.local" });
+loadEnv({ path: ".env" });
 
 function getPostgresUrl(): string {
   const url = process.env.DATABASE_URL || "";

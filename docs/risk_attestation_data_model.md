@@ -333,7 +333,7 @@ At Project Submission, the system pins the current PolicyVersion of every releva
 - **Brand Reviewer** — Reputational risk: naming, marketing, positioning.
 - **Security Reviewer** — Technical security controls vs. data sensitivity. Reads both attested answers and Repo Findings.
 
-**Question Author** — Legal/risk/independence professional who maintains the question corpus, policy documents, dependency graph, and Patterns. Distinct workflow from Reviewer.
+**Policy Author** — Legal/risk/independence professional who maintains the question corpus, policy documents, dependency graph, and Patterns. Distinct workflow from Reviewer.
 
 **System** — The AI-driven actor. Pre-populates answers, generates DocExtractions, produces RepoFindings, computes PatternMatches, flags Discrepancies. Never accountable; outputs are accepted by humans or persist as objective evidence.
 

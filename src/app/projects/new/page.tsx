@@ -113,7 +113,7 @@ export default function NewProjectPage() {
           )}
 
           <div className="flex gap-3 justify-end">
-            <a href="/projects">
+            <a href="/">
               <Button variant="secondary">Cancel</Button>
             </a>
             <Button type="submit" disabled={submitting}>

@@ -19,9 +19,24 @@ export async function GET(
       question: { include: { section: true } },
       answers: {
         where: { projectId },
+        include: { attester: { select: { id: true, name: true, email: true } } },
       },
     },
   });
+
+  // Map each child version to its parent slug (first parent if multiple).
+  // Lets the UI render child questions visually linked to their parent.
+  const versionIds = versions.map((v) => v.id);
+  const dependencies = await prisma.questionDependency.findMany({
+    where: { childVersionId: { in: versionIds } },
+    include: { parentVersion: { include: { question: true } } },
+  });
+  const parentSlugByChild = new Map<string, string>();
+  for (const dep of dependencies) {
+    if (!parentSlugByChild.has(dep.childVersionId)) {
+      parentSlugByChild.set(dep.childVersionId, dep.parentVersion.question.slug);
+    }
+  }
 
   const result = versions.map((v) => ({
     questionVersionId: v.id,
@@ -34,6 +49,7 @@ export async function GET(
     helpText: v.helpText,
     required: v.required,
     isActive: activeQuestionVersionIds.includes(v.id),
+    parentSlug: parentSlugByChild.get(v.id) ?? null,
     answer: v.answers[0] || null,
   }));
 

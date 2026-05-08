@@ -118,8 +118,8 @@ For OR semantics, use a single `activates_when` entry with `condition: any_of` a
 
 ## What V1 contains and what it doesn't
 
-V1 ships with the structural skeleton: every section is represented, every foundational and triage question is captured, and the highest-leverage section-specific questions are present. The full deep-question set (the 50+ AIRA questions, the full DSO data risk taxonomy, every NSS branch) is not exhaustive — Question Authors will fill these in over time.
+V1 ships with the structural skeleton: every section is represented, every foundational and triage question is captured, and the highest-leverage section-specific questions are present. The full deep-question set (the 50+ AIRA questions, the full DSO data risk taxonomy, every NSS branch) is not exhaustive — Policy Authors will fill these in over time.
 
-Where a question file says "more questions to be added by Question Authors," that is intentional — it is not a gap for Claude Code to fill on its own.
+Where a question file says "more questions to be added by Policy Authors," that is intentional — it is not a gap for Claude Code to fill on its own.
 
 Per-question citations back to source EY policy documents are out of scope for V1. They are planned for V2.

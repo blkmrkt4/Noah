@@ -98,13 +98,13 @@ A single source of truth for terms used across the ARC system. Two parts:
 
 ### Personas
 
-See `personas.md` for full descriptions. In brief: Commercial Owner, Collaborator (Section Lead, Question Collaborator), Reviewer (Jurisdictional, Independence, Privacy, Brand, Security), Question Author, System.
+See `personas.md` for full descriptions. In brief: Commercial Owner, Collaborator (Section Lead, Question Collaborator), Reviewer (Jurisdictional, Independence, Privacy, Brand, InfoSec), Policy Author, System.
 
 ### Entities
 
 **Project** — A single product attestation. Top-level container. One Commercial Owner, one or more target Jurisdictions. Status progresses Drafting → Project Submission → Project Review → Project Disposition.
 
-**Section** — A grouping of questions (Security, AI/ML, Data residency, Independence, Brand, Privacy, etc.). The unit of release; can be Released to scoped Reviewers independently of the rest of the project.
+**Section** — A grouping of questions (InfoSec, AI/ML, Data residency, Independence, Brand, Privacy, etc.). The unit of release; can be Released to scoped Reviewers independently of the rest of the project.
 
 **SectionState** — Per-project, per-section state machine: Drafting → Released → Under Review → Cleared.
 

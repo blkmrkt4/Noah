@@ -52,7 +52,7 @@ See `personas.md` for the full taxonomy. In brief:
 - **Commercial Owner** — accountable for the attestation, exactly one per project.
 - **Collaborator** (Section Lead, Question Collaborator) — subject-matter contributors invited to answer specific questions or sections.
 - **Reviewer** (Jurisdictional, Independence, Privacy, Brand, Security) — risk-domain experts who evaluate Released Sections and issue Dispositions.
-- **Question Author** — legal/risk professionals who maintain the question corpus, dependency graph, policy documents, and Patterns.
+- **Policy Author** — legal/risk professionals who maintain the question corpus, dependency graph, policy documents, Patterns, and per-question "more info" snippets.
 - **System** — the AI-driven actor; pre-populates, extracts, scans, computes Pattern fit, flags Discrepancies. Never accountable.
 
 A single human user can hold different personas across different projects.
@@ -77,7 +77,7 @@ V1 is the full system as described in `data-model.md`. There is no lean MVP cut.
 - Threaded discussion attached to Answers, Reviews, Clarifications, and Delegations.
 - Notification batching to avoid the "50 emails" problem, with urgent override.
 - Policy version snapshot at Project Submission for audit reproducibility.
-- Question Author tooling to create/edit Questions, Dependencies, Patterns, and Policy Documents.
+- Policy Author tooling to create/edit Questions, Dependencies, Patterns, and Policy Documents.
 
 ### Risk domains in scope for V1
 
@@ -154,9 +154,9 @@ These four streams converge on the body of evidence: attested Answers, DocExtrac
 6. Reviewer reads the response and either marks the Clarification Resolved or asks a follow-up.
 7. When all Clarifications on the Review are Resolved, Reviewer issues a Disposition.
 
-### 7.3 Question Author workflow
+### 7.3 Policy Author workflow
 
-1. Question Author logs in to the corpus authoring tool.
+1. Policy Author logs in to the corpus authoring tool.
 2. They can create a new Question (which creates a Question entity and an initial QuestionVersion 1), edit an existing Question (which creates QuestionVersion N+1 — old versions remain immutable), or retire a Question.
 3. They can edit Question Dependencies, defining the activation rule that determines when a child question becomes visible.
 4. They can create or edit Patterns and PatternVersions, including the criteria, jurisdiction scope, and reviewer_waivers.
@@ -183,14 +183,14 @@ See `questions/README.md` for the schema and `dependency-graph.mmd` for the visu
 
 ## 9. Pattern library
 
-V1 ships with an initial set of Patterns to validate the fast-track mechanism. These will be expanded by Question Authors over time. Initial patterns include:
+V1 ships with an initial set of Patterns to validate the fast-track mechanism. These will be expanded by Policy Authors over time. Initial patterns include:
 
 - **Internal-only knowledge assistant on approved EY AI platform** — internal users only, EY-policy-only data (C2 approved), no client data, no automated decisions, on an approved EY platform → AIQRM and Privacy waived; Brand streamlined.
 - **Read-only single-client viewer of client-supplied data under SOW** — single client, client data, read-only, no AI inference, SOW-bounded → DSO green-lane, expedited Privacy.
 - **Public-domain data analytics tool, no personal data** — public/IP-free data only, no PII, no client data, internal users → Privacy waived, Independence streamlined.
 - **Production AI agent with C3 client data and CIC** — full review path; Pattern documents what evidence is required so the team can prepare upfront.
 
-Patterns are versioned. Their criteria reference question slugs, not question version IDs. Question Authors are responsible for re-versioning a Pattern if a question's meaning materially changes.
+Patterns are versioned. Their criteria reference question slugs, not question version IDs. Policy Authors are responsible for re-versioning a Pattern if a question's meaning materially changes.
 
 ## 10. Data classification — the C1/C2/C3/C4 spine
 
@@ -232,7 +232,7 @@ User preferences for digest cadence, channel (push, email, in-app), and urgency 
 
 Every Answer carries the QuestionVersion it was answered against. Every Project at Submission pins a PolicySnapshot of the relevant PolicyVersions. Every Reviewer Disposition is timestamped and immutable. RepoFindings are pinned to commit SHA. DocExtractions reference the Document version they were produced from.
 
-This means: at any point in the future, a Question Author or external auditor can ask "as of when this Project was submitted, what version of every question, every policy, every dependency rule, every pattern definition applied?" and get a deterministic answer.
+This means: at any point in the future, a Policy Author or external auditor can ask "as of when this Project was submitted, what version of every question, every policy, every dependency rule, every pattern definition applied?" and get a deterministic answer.
 
 Soft deletes are not used. If a record needs to be removed, that is a design decision, not an automatic column.
 

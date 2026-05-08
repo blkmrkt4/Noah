@@ -5,7 +5,7 @@ description: |
   Non-Standard Software (NSS) review. Activates when software.is_non_standard
   is true. Hinges on who is acquiring the license and what data is shared,
   which determines downstream review engagement (Security Consulting, BRIDGE,
-  GCO, Data Protection). Reviewer engagement: Security Reviewer (Security
+  GCO, Data Protection). Reviewer engagement: InfoSec Reviewer (Security
   Consulting where required), Independence Reviewer (BRIDGE), Contracts (GCO
   license review where EY is licensee), Privacy Reviewer (Data Protection
   where PII shared).
@@ -146,7 +146,7 @@ questions:
         values: [c2, c3, c4]
 
   # ─────────────────────────────────────────────────────
-  # NOTE: more questions to be added by Question Authors
+  # NOTE: more questions to be added by Policy Authors
   # ─────────────────────────────────────────────────────
   # Areas flagged for expansion:
   # - GCO contract review checklist for NSS

@@ -102,24 +102,24 @@ Evaluates whether technical security controls match the data sensitivity (e.g., 
 
 ---
 
-## Question Author
+## Policy Author
 
-A legal, risk, or independence professional who maintains the question corpus, the policy documents, the dependency graph, and the fast-track Patterns.
+A legal, risk, or independence professional who maintains the question corpus, the policy documents, the dependency graph, the fast-track Patterns, and the per-question "more info" snippets that are scanned out of the policy library and surfaced to Commercial Owners.
+
+In practice this role is held by someone in the firm's risk function — a Risk lead, a subordinate working for that lead, or a function head. The system models it as a single role; org reporting is outside ARC.
 
 **Responsibilities**
-- Creates and edits Questions (creating new QuestionVersions on edit; old versions remain immutable).
+- Creates and edits Questions (creating new QuestionVersions on edit; old versions remain immutable). Edits are staged and published in batches.
 - Edits the Question Dependency DAG.
 - Creates and edits Patterns and PatternVersions.
 - Uploads PolicyDocs and PolicyVersions.
+- Maps Sections to required Policies and runs scans that produce per-question "more info" snippets; reviews, edits, and approves the snippets.
 - Retires Questions and Patterns when no longer applicable.
 
 **Authority**
-- Has `is_question_author = true` in `User.global_roles`.
+- Has `is_question_author = true` in `User.global_roles`. (Underlying flag name retained for schema continuity; surface label is "Policy Author".)
 - Cannot retroactively change historical attestations — version pinning ensures past Answers, Patterns, and Policies remain coherent.
 - Distinct workflow from Reviewer. Some individuals will hold both personas; the workflows are separate.
-
-**Naming note**
-Considered "Policy Author" but a Question Author owns more than policies — they own questions, dependencies, and patterns. "Question Author" is slightly narrow but it's the most concrete description of what they do day-to-day.
 
 ---
 
@@ -149,7 +149,7 @@ A single human user can hold multiple personas across different projects:
 - Commercial Owner on Project A
 - Section Lead on Project B
 - Privacy Reviewer on Project C
-- Question Author globally
+- Policy Author globally
 
 The User entity is global. The role is contextual to the Project.
 
@@ -157,7 +157,7 @@ The User entity is global. The role is contextual to the Project.
 
 ## Authority matrix
 
-| Action | Commercial Owner | Section Lead | Question Collaborator | Reviewer | Question Author | System |
+| Action | Commercial Owner | Section Lead | Question Collaborator | Reviewer | Policy Author | System |
 |---|---|---|---|---|---|---|
 | Create Project | ✓ | | | | | |
 | Edit Project metadata | ✓ | | | | | |
