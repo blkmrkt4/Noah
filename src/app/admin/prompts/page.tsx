@@ -25,14 +25,21 @@ export default function PromptsPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     void load();
   }, []);
 
   async function load() {
-    const res = await fetch("/api/admin/prompts");
-    setPrompts(await res.json());
+    setLoadError(false);
+    try {
+      const res = await fetch("/api/admin/prompts");
+      if (!res.ok) throw new Error(`${res.status}`);
+      setPrompts(await res.json());
+    } catch {
+      setLoadError(true);
+    }
   }
 
   function startCreate() {
@@ -227,8 +234,14 @@ only if the policy has no concrete guidance to illustrate.`}</pre>
             </div>
           </Card>
         ))}
-        {prompts.length === 0 && (
-          <p className="text-sm text-ey-sonic-silver">No prompts defined yet.</p>
+        {loadError && (
+          <Card>
+            <p className="text-frame-red text-sm">Unable to load prompts — database may be unreachable.</p>
+            <Button variant="secondary" className="mt-2" onClick={() => load()}>Retry</Button>
+          </Card>
+        )}
+        {!loadError && prompts.length === 0 && (
+          <p className="text-sm text-ey-sonic-silver">No prompts defined yet. Run <code className="text-ey-yellow">npm run db:seed-admin</code> to seed defaults.</p>
         )}
       </div>
     </div>

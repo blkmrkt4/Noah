@@ -1,10 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button } from "./ui";
 import { SlugReveal } from "./SlugReveal";
 
 type Tab = "collaboration" | "reviewers";
+
+function shortId(slug: string): string {
+  let h = 0;
+  for (let i = 0; i < slug.length; i++) {
+    h = ((h << 5) - h + slug.charCodeAt(i)) | 0;
+  }
+  const chars = "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const abs = Math.abs(h);
+  return (
+    chars[abs % chars.length] +
+    chars[Math.floor(abs / chars.length) % chars.length] +
+    chars[Math.floor(abs / (chars.length * chars.length)) % chars.length]
+  );
+}
 
 interface UserLite {
   id: string;
@@ -64,9 +78,21 @@ export default function QuestionContextPanel({
   currentSectionSlug?: string | null;
 }) {
   const [tab, setTab] = useState<Tab>("collaboration");
+  const [flash, setFlash] = useState(false);
+  const prevSlugRef = useRef(question?.slug);
+
+  useEffect(() => {
+    if (question?.slug && question.slug !== prevSlugRef.current) {
+      setFlash(true);
+      const t = setTimeout(() => setFlash(false), 400);
+      prevSlugRef.current = question.slug;
+      return () => clearTimeout(t);
+    }
+    prevSlugRef.current = question?.slug;
+  }, [question?.slug]);
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className={`flex flex-col h-full min-h-0 transition-colors duration-400 ${flash ? "bg-ey-yellow/5" : ""}`}>
       <TabStrip active={tab} onChange={setTab} />
       <div className="flex-1 overflow-y-auto min-h-0">
         {tab === "collaboration" && (
@@ -78,7 +104,7 @@ export default function QuestionContextPanel({
           />
         )}
         {tab === "reviewers" && (
-          <ReviewersTab projectId={projectId} sectionSlug={currentSectionSlug ?? null} />
+          <ReviewersTab projectId={projectId} sectionSlug={currentSectionSlug ?? null} focusedQuestionSlug={question?.slug ?? null} />
         )}
       </div>
     </div>
@@ -87,7 +113,7 @@ export default function QuestionContextPanel({
 
 function TabStrip({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   const tabs: { id: Tab; label: string }[] = [
-    { id: "collaboration", label: "Collaboration" },
+    { id: "collaboration", label: "Delegates" },
     { id: "reviewers", label: "Reviewers" },
   ];
   return (
@@ -242,7 +268,7 @@ function QuestionZone({
   return (
     <div className="px-5 pt-5 pb-4 space-y-4 text-sm border-b border-ey-dark-gray">
       <p className="text-[10px] uppercase tracking-wider text-ey-sonic-silver">
-        This question
+        Discussion — Start a thread
       </p>
 
       {showAnsweredBy && (
@@ -282,14 +308,7 @@ function QuestionZone({
       />
 
       <div>
-        <p className="text-[10px] uppercase tracking-wider text-ey-sonic-silver mb-2">
-          Discussion
-        </p>
-        {!question.answer ? (
-          <p className="text-xs text-ey-sonic-silver">
-            Answer the question first to start a thread.
-          </p>
-        ) : (
+        {question.answer ? (
           <>
             <ul className="space-y-3 mb-3 max-h-64 overflow-y-auto pr-1">
               {comments.length === 0 && (
@@ -322,7 +341,7 @@ function QuestionZone({
               </Button>
             </div>
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -548,47 +567,6 @@ interface CollaborationPayload {
   facets: { byAuthor: { id: string; name: string; email: string; count: number }[] };
 }
 
-function ScopeToggle({
-  scope,
-  onChange,
-  hasSection,
-}: {
-  scope: "project" | "section";
-  onChange: (s: "project" | "section") => void;
-  hasSection: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between flex-shrink-0">
-      <span className="text-[10px] uppercase tracking-wider text-ey-sonic-silver">
-        Scope
-      </span>
-      <div className="flex rounded-full border border-ey-sonic-silver/40 overflow-hidden text-[10px]">
-        <button
-          onClick={() => onChange("section")}
-          disabled={!hasSection}
-          className={`px-2.5 py-0.5 transition-colors disabled:opacity-40 ${
-            scope === "section"
-              ? "bg-ey-yellow text-black"
-              : "text-ey-light-gray hover:bg-ey-dark-gray"
-          }`}
-        >
-          Section
-        </button>
-        <button
-          onClick={() => onChange("project")}
-          className={`px-2.5 py-0.5 transition-colors ${
-            scope === "project"
-              ? "bg-ey-yellow text-black"
-              : "text-ey-light-gray hover:bg-ey-dark-gray"
-          }`}
-        >
-          Project
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function FilterRow({
   label,
   sublabel,
@@ -631,11 +609,21 @@ function FilterRow({
   );
 }
 
-function FeedItemRow({ item }: { item: FeedItem }) {
+function FeedItemRow({ item, scope }: { item: FeedItem; scope?: "section" | "case" }) {
   return (
     <li className="border-l border-ey-sonic-silver/20 pl-3 py-1">
       <div className="flex items-baseline justify-between gap-2 mb-0.5">
-        <span className="text-white text-xs font-medium truncate">{item.actor.name}</span>
+        <span className="flex items-baseline gap-1.5 min-w-0 flex-wrap">
+          <span className="text-white text-xs font-medium truncate">{item.actor.name}</span>
+          {scope && (
+            <span className={`text-[9px] px-1.5 py-0.5 rounded flex-shrink-0 ${scope === "section" ? "bg-ey-yellow/15 text-ey-yellow" : "bg-frame-blue/15 text-frame-blue"}`}>
+              {scope}
+            </span>
+          )}
+          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold text-frame-purple bg-frame-purple/15 flex-shrink-0" title={`Comment ${shortId(item.id)}`}>
+            {shortId(item.id)}
+          </span>
+        </span>
         <span className="text-[10px] text-ey-sonic-silver shrink-0">
           {new Date(item.timestamp).toLocaleString()}
         </span>
@@ -676,28 +664,23 @@ function CollaborationTab({
   sectionSlug: string | null;
   commercialOwnerId?: string;
 }) {
-  const hasSection = !!sectionSlug;
-  const [scope, setScope] = useState<"project" | "section">(hasSection ? "section" : "project");
-  const [filter, setFilter] = useState<string | null>(null);
   const [data, setData] = useState<CollaborationPayload | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    const url =
-      `/api/projects/${projectId}/activity?type=collaboration` +
-      (scope === "section" && sectionSlug ? `&section=${encodeURIComponent(sectionSlug)}` : "");
-    void fetch(url)
-      .then((r) => r.json())
+    void fetch(`/api/projects/${projectId}/activity?type=collaboration`)
+      .then((r) => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
       .then((d) => setData(d))
-      .finally(() => setLoading(false));
-  }, [projectId, scope, sectionSlug]);
+      .catch(() => setData(null));
+  }, [projectId]);
+
+  const focusedSlug = question?.slug ?? null;
 
   const items = useMemo(() => {
     if (!data) return [];
-    if (!filter) return data.items;
-    return data.items.filter((i) => i.actor.id === filter);
-  }, [data, filter]);
+    let filtered = data.items;
+    if (focusedSlug) filtered = filtered.filter((i) => !i.questionSlug || i.questionSlug === focusedSlug);
+    return filtered;
+  }, [data, focusedSlug]);
 
   return (
     <div className="flex flex-col h-full text-sm">
@@ -709,58 +692,20 @@ function CollaborationTab({
         />
       ) : null}
 
-      <div className="p-4 space-y-3 flex flex-col flex-1 min-h-0">
-        <p className="text-[10px] uppercase tracking-wider text-ey-sonic-silver">
-          Activity
-        </p>
-
-        <ScopeToggle scope={scope} onChange={setScope} hasSection={hasSection} />
-
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-ey-sonic-silver mb-1.5">
-            Contributors
+      {items.length > 0 && (
+        <div className="p-4 flex flex-col flex-1 min-h-0 border-t border-ey-sonic-silver/20">
+          <p className="text-[10px] uppercase tracking-wider text-ey-sonic-silver mb-2">
+            Delegate activity
           </p>
-          <div className="space-y-0.5">
-            <FilterRow
-              label="All activity"
-              count={data?.totalScoped ?? 0}
-              active={filter === null}
-              onClick={() => setFilter(null)}
-            />
-            {(data?.facets.byAuthor ?? []).map((a) => (
-              <FilterRow
-                key={a.id}
-                label={a.name}
-                sublabel={a.email}
-                count={a.count}
-                active={filter === a.id}
-                onClick={() => setFilter(a.id)}
-              />
-            ))}
-            {data && data.facets.byAuthor.length === 0 && !loading && (
-              <p className="text-[11px] text-ey-sonic-silver px-2 py-1">
-                No collaborator activity yet.
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          {loading ? (
-            <p className="text-xs text-ey-sonic-silver">Loading…</p>
-          ) : items.length === 0 ? (
-            <p className="text-xs text-ey-sonic-silver">
-              {filter ? "No activity from this contributor in this scope." : "Nothing to show."}
-            </p>
-          ) : (
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <ul className="space-y-3">
               {items.map((i) => (
-                <FeedItemRow key={`${i.kind}-${i.id}`} item={i} />
+                <FeedItemRow key={`${i.kind}-${i.id}`} item={i} scope={i.sectionSlug === sectionSlug ? "section" : "case"} />
               ))}
             </ul>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -799,41 +744,43 @@ interface ReviewerPayload {
 function ReviewersTab({
   projectId,
   sectionSlug,
+  focusedQuestionSlug,
 }: {
   projectId: string;
   sectionSlug: string | null;
+  focusedQuestionSlug: string | null;
 }) {
-  const hasSection = !!sectionSlug;
-  const [scope, setScope] = useState<"project" | "section">(hasSection ? "section" : "project");
   const [domainFilter, setDomainFilter] = useState<string | null>(null);
-  const [jurisdictionFilter, setJurisdictionFilter] = useState<string | null>(null);
   const [data, setData] = useState<ReviewerPayload | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    const url =
-      `/api/projects/${projectId}/activity?type=reviewer` +
-      (scope === "section" && sectionSlug ? `&section=${encodeURIComponent(sectionSlug)}` : "");
-    void fetch(url)
-      .then((r) => r.json())
+    void fetch(`/api/projects/${projectId}/activity?type=reviewer`)
+      .then((r) => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
       .then((d) => setData(d))
+      .catch(() => setData(null))
       .finally(() => setLoading(false));
-  }, [projectId, scope, sectionSlug]);
+  }, [projectId]);
 
   const items = useMemo(() => {
     if (!data) return [];
     return data.items.filter((i) => {
       if (domainFilter && i.domain !== domainFilter) return false;
-      if (jurisdictionFilter && !(i.jurisdictions ?? []).includes(jurisdictionFilter)) return false;
+      // When a question is focused, show only activity for that question
+      if (focusedQuestionSlug && i.questionSlug && i.questionSlug !== focusedQuestionSlug) return false;
       return true;
     });
-  }, [data, domainFilter, jurisdictionFilter]);
+  }, [data, domainFilter, focusedQuestionSlug]);
 
   return (
     <div className="p-4 space-y-3 text-sm flex flex-col h-full">
-      <ScopeToggle scope={scope} onChange={setScope} hasSection={hasSection} />
-
+      {focusedQuestionSlug && (
+        <div className="rounded bg-frame-purple/10 border border-frame-purple/30 px-3 py-2">
+          <p className="text-[10px] uppercase tracking-wider text-frame-purple mb-0.5">Filtered to question</p>
+          <p className="text-xs text-ey-light-gray font-mono truncate">{focusedQuestionSlug}</p>
+        </div>
+      )}
       <div>
         <p className="text-[10px] uppercase tracking-wider text-ey-sonic-silver mb-1.5">
           Domain
@@ -857,47 +804,19 @@ function ReviewersTab({
         </div>
       </div>
 
-      <div>
-        <p className="text-[10px] uppercase tracking-wider text-ey-sonic-silver mb-1.5">
-          Jurisdiction
-        </p>
-        <div className="space-y-0.5">
-          <FilterRow
-            label="All jurisdictions"
-            count={data?.totalScoped ?? 0}
-            active={jurisdictionFilter === null}
-            onClick={() => setJurisdictionFilter(null)}
-          />
-          {(data?.facets.byJurisdiction ?? []).map((j) => (
-            <FilterRow
-              key={j.id}
-              label={j.id}
-              count={j.count}
-              active={jurisdictionFilter === j.id}
-              onClick={() => setJurisdictionFilter(j.id)}
-            />
-          ))}
-          {data && data.facets.byJurisdiction.length === 0 && !loading && (
-            <p className="text-[11px] text-ey-sonic-silver px-2 py-1">
-              No reviewers assigned yet.
-            </p>
-          )}
-        </div>
-      </div>
-
       <div className="flex-1 min-h-0 overflow-y-auto">
         {loading ? (
           <p className="text-xs text-ey-sonic-silver">Loading...</p>
         ) : items.length === 0 ? (
           <p className="text-xs text-ey-sonic-silver">
-            {domainFilter || jurisdictionFilter
-              ? "No reviewer activity matches the current filters."
+            {domainFilter
+              ? "No reviewer activity matches the current filter."
               : "No reviewer activity yet."}
           </p>
         ) : (
           <ul className="space-y-3">
             {items.map((i) => (
-              <FeedItemRow key={`${i.kind}-${i.id}`} item={i} />
+              <FeedItemRow key={`${i.kind}-${i.id}`} item={i} scope={i.sectionSlug === sectionSlug ? "section" : "case"} />
             ))}
           </ul>
         )}

@@ -12,7 +12,19 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { readFileSync } from "fs";
 import { join } from "path";
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? "" });
+function getPostgresUrl(): string {
+  const url = process.env.DATABASE_URL || "";
+  if (url.startsWith("prisma+postgres")) {
+    const apiKey = new URL(url.replace("prisma+postgres", "http")).searchParams.get("api_key");
+    if (apiKey) {
+      const decoded = JSON.parse(Buffer.from(apiKey, "base64").toString());
+      return decoded.databaseUrl;
+    }
+  }
+  return url;
+}
+
+const adapter = new PrismaPg({ connectionString: getPostgresUrl() });
 const prisma = new (PrismaClient as any)({ adapter }) as PrismaClient;
 
 const SYSTEM_JSON =
@@ -217,24 +229,20 @@ async function main() {
   }
   console.log(`✓ Seeded ${MODELS.length} models`);
 
+  let promptsCreated = 0;
+  let promptsSkipped = 0;
   for (const p of PROMPTS) {
-    // Always push the latest content from the repo. This makes the seed
-    // script (and the markdown files in prisma/prompts/) the source of
-    // truth for prompts. Anyone editing in /admin should know the next
-    // db:seed-admin will overwrite their changes — promote good edits back
-    // into the file rather than leaving them orphaned in the DB.
-    await prisma.promptLibrary.upsert({
-      where: { slug: p.slug },
-      create: p,
-      update: {
-        name: p.name,
-        description: p.description,
-        systemPrompt: p.systemPrompt,
-        userPromptTemplate: p.userPromptTemplate,
-      },
-    });
+    // Create-only: never overwrite prompts that already exist in the DB.
+    // This protects hand-crafted edits made in /admin.
+    const existing = await prisma.promptLibrary.findUnique({ where: { slug: p.slug } });
+    if (existing) {
+      promptsSkipped += 1;
+      continue;
+    }
+    await prisma.promptLibrary.create({ data: p });
+    promptsCreated += 1;
   }
-  console.log(`✓ Seeded ${PROMPTS.length} prompts`);
+  console.log(`✓ Prompts: ${promptsCreated} created, ${promptsSkipped} already exist (not overwritten)`);
 
   for (const b of BINDS) {
     const model = await prisma.modelLibrary.findUnique({

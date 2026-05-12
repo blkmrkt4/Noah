@@ -591,6 +591,9 @@ model Review {
   status           ReviewStatus     @default(open)
   disposition      ReviewDisposition?
   dispositionNotes String?          @map("disposition_notes")
+  isCriticalPath   Boolean          @default(true) @map("is_critical_path")
+  advisoryDeadline DateTime?        @map("advisory_deadline")
+  lastViewedAt     DateTime?        @map("last_viewed_at")
   openedAt         DateTime         @default(now()) @map("opened_at")
   closedAt         DateTime?        @map("closed_at")
 

@@ -13,6 +13,21 @@ type ActivityEvent = {
   message: string;
 };
 
+type ReviewerActivityItem = {
+  reviewId: string;
+  reviewerName: string;
+  domain: string;
+  sectionName: string | null;
+  isCriticalPath: boolean;
+  advisoryDeadline: string | null;
+  signal: "red" | "yellow" | "green";
+  lastAction: {
+    type: "viewed" | "commented" | "clarification_opened" | "clarification_resolved" | "delegated" | "disposed" | "none";
+    at: string | null;
+  };
+  disposition: string | null;
+};
+
 const REVIEW_STALE_HOURS = 72;
 const ACTIVE_PROJECT_STATUSES = ["drafting", "submitted", "in_review"] as const;
 
@@ -64,33 +79,79 @@ function riskFromSignals(signals: {
 
 /** GET /api/dashboard — Persona-aware operations dashboard payload */
 export async function GET(req: NextRequest) {
+  try {
   const { searchParams } = new URL(req.url);
   const persona = normalizePersona(searchParams.get("persona"));
 
-  const projects = await prisma.project.findMany({
-    where: {
-      status: { in: [...ACTIVE_PROJECT_STATUSES] },
-    },
+  // Fetch base projects first (lightweight), then use IDs for parallel sub-queries.
+  // Avoids one massive nested include that overwhelms the Prisma Postgres dev server.
+  const projectsBase = await prisma.project.findMany({
+    where: { status: { in: [...ACTIVE_PROJECT_STATUSES] } },
     include: {
       commercialOwner: true,
       jurisdictions: { include: { jurisdiction: true } },
       sectionStates: { include: { section: true } },
-      reviews: {
-        include: {
-          reviewer: { include: { user: true } },
-          clarifications: true,
-          threads: { include: { comments: true } },
-        },
-      },
-      delegations: {
-        include: {
-          assignee: true,
-          threads: { include: { comments: true } },
-        },
-      },
     },
     orderBy: { createdAt: "desc" },
   });
+
+  const projectIds = projectsBase.map((p) => p.id);
+
+  const [allReviews, allDelegations, answerRows] = await Promise.all([
+    prisma.review.findMany({
+      where: { projectId: { in: projectIds } },
+      include: {
+        reviewer: { include: { user: true } },
+        section: true,
+        clarifications: true,
+        threads: { include: { comments: true } },
+      },
+    }),
+    prisma.delegation.findMany({
+      where: { projectId: { in: projectIds } },
+      include: {
+        assignee: true,
+        threads: { include: { comments: true } },
+      },
+    }),
+    prisma.answer.findMany({
+      where: { projectId: { in: projectIds } },
+      select: {
+        id: true,
+        projectId: true,
+        threads: { select: { comments: { select: { id: true } } } },
+        clarifications: { select: { id: true } },
+      },
+    }),
+  ]);
+
+  // Index by projectId
+  const reviewsByProject = new Map<string, typeof allReviews>();
+  for (const r of allReviews) {
+    const list = reviewsByProject.get(r.projectId) ?? [];
+    list.push(r);
+    reviewsByProject.set(r.projectId, list);
+  }
+  const delegationsByProject = new Map<string, typeof allDelegations>();
+  for (const d of allDelegations) {
+    const list = delegationsByProject.get(d.projectId) ?? [];
+    list.push(d);
+    delegationsByProject.set(d.projectId, list);
+  }
+  const answersByProject = new Map<string, typeof answerRows>();
+  for (const a of answerRows) {
+    const list = answersByProject.get(a.projectId) ?? [];
+    list.push(a);
+    answersByProject.set(a.projectId, list);
+  }
+
+  // Reassemble with full typed relations
+  const projects = projectsBase.map((p) => ({
+    ...p,
+    reviews: reviewsByProject.get(p.id) ?? [] as typeof allReviews,
+    delegations: delegationsByProject.get(p.id) ?? [] as typeof allDelegations,
+    answers: answersByProject.get(p.id) ?? [] as typeof answerRows,
+  }));
 
   const sectionBottlenecks = new Map<
     string,
@@ -246,6 +307,63 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Build per-reviewer activity for expandable dashboard rows
+    const now = new Date();
+    const reviewerActivity: ReviewerActivityItem[] = project.reviews.map((review) => {
+      // Determine the most recent action and its timestamp
+      const actionCandidates: { type: ReviewerActivityItem["lastAction"]["type"]; at: Date }[] = [];
+
+      if (review.lastViewedAt) {
+        actionCandidates.push({ type: "viewed", at: review.lastViewedAt });
+      }
+      if (review.closedAt) {
+        actionCandidates.push({ type: "disposed", at: review.closedAt });
+      }
+      for (const thread of review.threads) {
+        for (const comment of thread.comments) {
+          actionCandidates.push({ type: "commented", at: comment.createdAt });
+        }
+      }
+      for (const clarification of review.clarifications) {
+        actionCandidates.push({ type: "clarification_opened", at: clarification.openedAt });
+        if (clarification.resolvedAt) {
+          actionCandidates.push({ type: "clarification_resolved", at: clarification.resolvedAt });
+        }
+      }
+
+      actionCandidates.sort((a, b) => b.at.getTime() - a.at.getTime());
+      const latestAction = actionCandidates[0] ?? null;
+
+      // Compute signal color
+      let signal: "red" | "yellow" | "green";
+      if (review.status === "disposed") {
+        signal = "green";
+      } else if (!review.isCriticalPath) {
+        if (review.advisoryDeadline && review.advisoryDeadline <= now) {
+          signal = "green"; // deadline passed, silence = permissible
+        } else {
+          signal = "yellow";
+        }
+      } else {
+        signal = "red"; // critical-path, not yet disposed
+      }
+
+      return {
+        reviewId: review.id,
+        reviewerName: review.reviewer.user.name,
+        domain: review.domain,
+        sectionName: review.section?.displayName ?? null,
+        isCriticalPath: review.isCriticalPath,
+        advisoryDeadline: review.advisoryDeadline?.toISOString() ?? null,
+        signal,
+        lastAction: {
+          type: latestAction?.type ?? "none",
+          at: latestAction?.at.toISOString() ?? null,
+        },
+        disposition: review.disposition ?? null,
+      };
+    });
+
     const totalSections = project.sectionStates.length;
     const clearedSections = project.sectionStates.filter((s) => s.state === "cleared").length;
     const underReviewSections = project.sectionStates.filter((s) => s.state === "under_review").length;
@@ -302,6 +420,7 @@ export async function GET(req: NextRequest) {
       createdAt: project.createdAt.toISOString(),
       submittedAt: project.submittedAt?.toISOString() ?? null,
       lastActivityAt,
+      reviewerActivity,
     };
   });
 
@@ -317,6 +436,72 @@ export async function GET(req: NextRequest) {
     }
     return b.totalSections - a.totalSections;
   });
+
+  // ── Staleness / attention-required metrics ──────────────────────────────
+  const now = new Date();
+  const DAYS_MS = 1000 * 60 * 60 * 24;
+
+  // Cases where no reviewer has done anything in 14+ days
+  const staleCases14d = projects.filter((project) => {
+    if (project.reviews.length === 0) return false;
+    const latestReviewerAction = Math.max(
+      ...project.reviews.map((r) => {
+        const dates: number[] = [r.openedAt.getTime()];
+        if (r.lastViewedAt) dates.push(r.lastViewedAt.getTime());
+        if (r.closedAt) dates.push(r.closedAt.getTime());
+        for (const c of r.clarifications) {
+          dates.push(c.openedAt.getTime());
+          if (c.resolvedAt) dates.push(c.resolvedAt.getTime());
+        }
+        for (const t of r.threads) {
+          for (const cm of t.comments) dates.push(cm.createdAt.getTime());
+        }
+        return Math.max(...dates);
+      })
+    );
+    return (now.getTime() - latestReviewerAction) > 14 * DAYS_MS;
+  });
+
+  // Questions (answers) with zero reviewer comments and no sign-off on any review
+  let untouchedQuestions = 0;
+  for (const project of projects) {
+    const disposedReviewIds = new Set(
+      project.reviews.filter((r) => r.status === "disposed").map((r) => r.id)
+    );
+    for (const answer of project.answers) {
+      const hasReviewerComment = answer.threads.some((t) => t.comments.length > 0);
+      const hasClarification = answer.clarifications.length > 0;
+      if (!hasReviewerComment && !hasClarification) {
+        untouchedQuestions += 1;
+      }
+    }
+  }
+
+  // Delegations pending for 7+ days with no response
+  let staleDelegations = 0;
+  for (const project of projects) {
+    for (const delegation of project.delegations) {
+      if (delegation.status === "pending" && (now.getTime() - delegation.createdAt.getTime()) > 7 * DAYS_MS) {
+        staleDelegations += 1;
+      }
+    }
+  }
+
+  // Cases by age bucket
+  const ageBuckets = { over60: 0, over90: 0, over120: 0 };
+  for (const project of projects) {
+    const ageDays = (now.getTime() - project.createdAt.getTime()) / DAYS_MS;
+    if (ageDays > 120) { ageBuckets.over120 += 1; ageBuckets.over90 += 1; ageBuckets.over60 += 1; }
+    else if (ageDays > 90) { ageBuckets.over90 += 1; ageBuckets.over60 += 1; }
+    else if (ageDays > 60) { ageBuckets.over60 += 1; }
+  }
+
+  const attentionRequired = {
+    staleCases14d: staleCases14d.map((p) => ({ id: p.id, name: p.name })),
+    untouchedQuestions,
+    staleDelegations,
+    ageBuckets,
+  };
 
   const summary = {
     inProgressProjects: projectRows.length,
@@ -347,15 +532,22 @@ export async function GET(req: NextRequest) {
         .sort((a, b) => a.coveragePct - b.coveragePct)
         .slice(0, 8),
     },
+    attentionRequired,
     activity: activity.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)).slice(0, 30),
     notes: {
       engagementDefinition:
         "Engaged responders are reviewers/delegates with non-open status, clarification activity, or thread comments.",
       viewTracking:
-        "Explicit view telemetry is not yet instrumented; engagement is used as a proxy until view events are added.",
+        "Review view telemetry is tracked via lastViewedAt on each Review. Advisory reviews auto-green after their deadline.",
       staleReviewThresholdHours: REVIEW_STALE_HOURS,
     },
   };
 
   return NextResponse.json(response);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    const stack = err instanceof Error ? err.stack : "";
+    console.error("[dashboard] Error:", message, stack);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

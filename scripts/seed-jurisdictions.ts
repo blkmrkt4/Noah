@@ -18,7 +18,19 @@ import ExcelJS from "exceljs";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? "" });
+function getPostgresUrl(): string {
+  const url = process.env.DATABASE_URL || "";
+  if (url.startsWith("prisma+postgres")) {
+    const apiKey = new URL(url.replace("prisma+postgres", "http")).searchParams.get("api_key");
+    if (apiKey) {
+      const decoded = JSON.parse(Buffer.from(apiKey, "base64").toString());
+      return decoded.databaseUrl;
+    }
+  }
+  return url;
+}
+
+const adapter = new PrismaPg({ connectionString: getPostgresUrl() });
 const prisma = new (PrismaClient as any)({ adapter }) as PrismaClient;
 
 const DEFAULT_PATH =

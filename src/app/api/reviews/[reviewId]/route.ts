@@ -30,10 +30,20 @@ export async function GET(_req: NextRequest, { params }: Params) {
   return NextResponse.json(review);
 }
 
-/** PATCH /api/reviews/:reviewId — Issue disposition */
+/** PATCH /api/reviews/:reviewId — Issue disposition or record view */
 export async function PATCH(req: NextRequest, { params }: Params) {
   const { reviewId } = await params;
   const body = await req.json();
+
+  // View tracking: just update lastViewedAt without changing status
+  if (body.action === "view") {
+    const updated = await prisma.review.update({
+      where: { id: reviewId },
+      data: { lastViewedAt: new Date() },
+    });
+    return NextResponse.json({ id: updated.id, lastViewedAt: updated.lastViewedAt });
+  }
+
   const { disposition, dispositionNotes } = body;
 
   const review = await prisma.review.findUnique({
@@ -76,17 +86,33 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     },
   });
 
-  // Check if all reviews for this section are now disposed → clear section
+  // Check if all critical-path reviews for this section are disposed → clear section.
+  // Advisory reviews past their deadline are treated as implicit approvals and don't block.
+  const now = new Date();
+
   if (review.sectionId) {
     const sectionReviews = await prisma.review.findMany({
       where: { projectId: review.projectId, sectionId: review.sectionId },
     });
-    const allDisposed = sectionReviews.every((r) => r.status === "disposed" || r.id === reviewId);
-    const noneRejected = sectionReviews.every(
-      (r) => r.disposition !== "reject" || r.id === reviewId
-    );
 
-    if (allDisposed && noneRejected && disposition !== "reject") {
+    const sectionCleared = sectionReviews.every((r) => {
+      const effectiveDisposition = r.id === reviewId ? disposition : r.disposition;
+      const effectiveStatus = r.id === reviewId ? "disposed" : r.status;
+
+      // Disposed reviews pass if not rejected
+      if (effectiveStatus === "disposed") return effectiveDisposition !== "reject";
+
+      // Non-critical reviews past deadline = implicit green
+      if (!r.isCriticalPath && r.advisoryDeadline && r.advisoryDeadline <= now) return true;
+
+      // Critical-path review still open = blocks
+      if (r.isCriticalPath) return false;
+
+      // Advisory review before deadline = doesn't block
+      return !r.isCriticalPath;
+    });
+
+    if (sectionCleared && disposition !== "reject") {
       await prisma.sectionState.update({
         where: {
           projectId_sectionId: { projectId: review.projectId, sectionId: review.sectionId },
@@ -96,29 +122,23 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
   }
 
-  // Check if ALL reviews for the project are disposed → compute project disposition
+  // Check if ALL critical-path reviews for the project are done → project disposition
   const allProjectReviews = await prisma.review.findMany({
     where: { projectId: review.projectId },
   });
-  const allDone = allProjectReviews.every(
-    (r) => r.status === "disposed" || r.id === reviewId
-  );
+
+  const allDone = allProjectReviews.every((r) => {
+    if (r.status === "disposed" || r.id === reviewId) return true;
+    // Advisory past deadline counts as done
+    if (!r.isCriticalPath && r.advisoryDeadline && r.advisoryDeadline <= now) return true;
+    // Non-critical without deadline still blocks (shouldn't happen, but safe)
+    return !r.isCriticalPath;
+  });
 
   if (allDone) {
-    const hasReject = allProjectReviews.some(
-      (r) => (r.id === reviewId ? disposition : r.disposition) === "reject"
-    );
-    const hasConditional = allProjectReviews.some(
-      (r) => (r.id === reviewId ? disposition : r.disposition) === "conditional"
-    );
-
-    const projectDisposition = hasReject
-      ? "disposed" // rejected
-      : "disposed"; // approved or conditional
-
     await prisma.project.update({
       where: { id: review.projectId },
-      data: { status: projectDisposition },
+      data: { status: "disposed" },
     });
   }
 

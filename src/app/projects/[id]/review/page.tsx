@@ -39,6 +39,13 @@ export default function ReviewPage() {
         .then(setReview)
         .catch(() => null)
         .finally(() => setLoading(false));
+
+      // Record that the reviewer has viewed this review
+      fetch(`/api/reviews/${reviewId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "view" }),
+      }).catch(() => {});
     } else {
       setLoading(false);
     }
