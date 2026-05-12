@@ -1,0 +1,15 @@
+# Risk definitions for ART. Policy Authors populate this over time.
+# Each risk can be associated with questions from any non-foundation section.
+# Foundation sections (intake, triage) are nomenclature/routing and are
+# excluded from risk association.
+#
+# Format:
+#   risks:
+#     - slug: data-breach
+#       name: Data Breach Exposure
+#       description: Risk of unauthorized access to or disclosure of sensitive data.
+#       display_order: 1
+#       questions:
+#         - data.classification.highest_tier
+#         - data.stores_pii
+risks: []

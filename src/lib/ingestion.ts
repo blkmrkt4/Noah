@@ -504,7 +504,7 @@ function makeStreamWriter(runId: string) {
 /**
  * Kind 1 — evidence-cited human-readable technical analysis.
  *
- * Produces Markdown prose grouped by the eight ARC risk categories. The prompt
+ * Produces Markdown prose grouped by the eight ART risk categories. The prompt
  * lives at prisma/prompts/repo-scan-technical.md. Output is markdown, not JSON
  * (per the new prompt design — slugs and per-question pre-population are
  * handled separately by `runQuestionPrepopulationScan`).

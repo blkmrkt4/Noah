@@ -33,14 +33,14 @@ export default function ProjectsListPage() {
     <div className="px-6 py-8 max-w-7xl space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
-          <PageTitle>Assets in Process</PageTitle>
+          <PageTitle>Cases</PageTitle>
           <p className="text-ey-light-gray text-sm -mt-4">
-            Every product currently moving through the ARC review.
+            Every product currently moving through the ART review.
           </p>
         </div>
 
         <Link href="/projects/new">
-          <Button>New Asset in Process</Button>
+          <Button>New Case</Button>
         </Link>
       </div>
 
@@ -83,14 +83,14 @@ function EmptyState() {
         </svg>
       </div>
       <h2 className="text-ey-yellow text-xl font-semibold mb-2">
-        No assets in process yet
+        No cases yet
       </h2>
       <p className="text-ey-light-gray text-sm max-w-md mx-auto mb-6">
-        Start one to put a product through the ARC review. You&apos;ll connect
-        a repo, drop in any project documents, then walk the questionnaire.
+        Start one to put a product through the ART review. You&apos;ll connect
+        a repo, drop in any case documents, then walk the questionnaire.
       </p>
       <Link href="/projects/new">
-        <Button>Add an Asset in Process</Button>
+        <Button>Add a Case</Button>
       </Link>
     </Card>
   );
@@ -104,7 +104,7 @@ function ProjectTable({ projects }: { projects: ProjectListItem[] }) {
         <table className="w-full min-w-[820px] text-sm">
           <thead className="bg-black/35 text-ey-sonic-silver text-xs uppercase tracking-wide">
             <tr>
-              <th className="text-left px-4 py-3 font-medium">Asset</th>
+              <th className="text-left px-4 py-3 font-medium">Case</th>
               <th className="text-left px-4 py-3 font-medium">Owner</th>
               <th className="text-left px-4 py-3 font-medium">Jurisdictions</th>
               <th className="text-left px-4 py-3 font-medium">Sections Cleared</th>

@@ -84,7 +84,7 @@ export default function IngestionPage() {
           href={`/projects/${id}`}
           className="text-xs text-ey-yellow hover:underline"
         >
-          ← Back to asset
+          ← Back to case
         </Link>
         <PageTitle>{project ? `${project.name} · Ingestion` : "Ingestion"}</PageTitle>
         <p className="text-ey-light-gray text-sm -mt-4">
@@ -132,14 +132,14 @@ export default function IngestionPage() {
 
       <Card>
         <h2 className="text-ey-yellow text-sm font-semibold mb-4">
-          Project documents
+          Case documents
         </h2>
         <DocumentUpload projectId={id} />
       </Card>
 
       <Card>
         <h2 className="text-ey-yellow text-sm font-semibold mb-4">
-          Project links
+          Case links
         </h2>
         <ProjectLinks projectId={id} />
       </Card>

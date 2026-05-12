@@ -177,7 +177,7 @@ function DocumentsList({ docs }: { docs: DocumentRow[] | null }) {
   return (
     <Card>
       <h3 className="text-frame-orange text-sm font-semibold mb-3">
-        Project documents
+        Case documents
       </h3>
       {docs === null ? (
         <p className="text-xs text-ey-sonic-silver">Loading…</p>

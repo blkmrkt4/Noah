@@ -123,7 +123,7 @@ async function rawChatWithUsage(
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "https://arc.ey.com",
-        "X-Title": "ARC - Attestation Risk Compliance",
+        "X-Title": "ART - Attestation Risk Technology",
       },
       body: JSON.stringify({
         model: opts.openrouterModelId,

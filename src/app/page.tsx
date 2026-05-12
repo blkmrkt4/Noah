@@ -105,13 +105,13 @@ export default function Home() {
         <div>
           <PageTitle>Dashboard</PageTitle>
           <p className="text-ey-light-gray text-sm -mt-4">
-            Live approval operations across in-flight projects
+            Live approval operations across in-flight cases
           </p>
           <p className="text-ey-sonic-silver text-xs mt-2">Updated: {generatedLabel}</p>
         </div>
 
         <Link href="/projects/new">
-          <Button>New Project</Button>
+          <Button>New Case</Button>
         </Link>
       </div>
 
@@ -145,14 +145,14 @@ export default function Home() {
             <div className="xl:col-span-2">
               <Card className="p-0 overflow-hidden">
                 <div className="px-4 py-3 border-b border-ey-sonic-silver/20">
-                  <h2 className="text-white font-semibold">Project Portfolio</h2>
+                  <h2 className="text-white font-semibold">Case Portfolio</h2>
                 </div>
 
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[920px] text-sm">
                     <thead className="bg-black/35 text-ey-sonic-silver text-xs uppercase tracking-wide">
                       <tr>
-                        <th className="text-left px-4 py-3 font-medium">Project</th>
+                        <th className="text-left px-4 py-3 font-medium">Case</th>
                         <th className="text-left px-4 py-3 font-medium">Status</th>
                         <th className="text-left px-4 py-3 font-medium">Jurisdictions</th>
                         <th className="text-left px-4 py-3 font-medium">Responders</th>

@@ -45,7 +45,7 @@ export default function ScanOutputPage() {
           href={`/projects/${id}`}
           className="text-xs text-ey-yellow hover:underline"
         >
-          ← Back to asset
+          ← Back to case
         </Link>
         <PageTitle>{KIND_LABEL[kind] ?? "Scan output"}</PageTitle>
       </div>

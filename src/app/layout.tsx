@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ARC — Attestation, Risk & Compliance",
+  title: "ART — Attestation, Risk & Technology",
   description:
     "EY's risk attestation system for technology products. Answer once, review in parallel.",
 };

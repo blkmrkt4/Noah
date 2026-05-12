@@ -368,6 +368,8 @@ function QuestionCard({
   const [localValue, setLocalValue] = useState<unknown>(question.answer?.value ?? "");
   const [guidanceOpen, setGuidanceOpen] = useState(false);
   const [guidance, setGuidance] = useState<PublishedGuidance | null | undefined>(undefined);
+  const [riskOpen, setRiskOpen] = useState(false);
+  const [risks, setRisks] = useState<{ id: string; slug: string; name: string; description: string | null }[] | undefined>(undefined);
 
   useEffect(() => {
     setLocalValue(question.answer?.value ?? "");
@@ -382,15 +384,27 @@ function QuestionCard({
       .catch(() => setGuidance(null));
   }, [guidanceOpen, guidance, question.questionVersionId]);
 
-  // Esc closes the panel
+  // Lazy-load risks on first open
   useEffect(() => {
-    if (!guidanceOpen) return;
+    if (!riskOpen || risks !== undefined) return;
+    void fetch(`/api/questions/${question.questionVersionId}/risks`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setRisks(Array.isArray(data) ? data : []))
+      .catch(() => setRisks([]));
+  }, [riskOpen, risks, question.questionVersionId]);
+
+  // Esc closes open panels
+  useEffect(() => {
+    if (!guidanceOpen && !riskOpen) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setGuidanceOpen(false);
+      if (e.key === "Escape") {
+        setGuidanceOpen(false);
+        setRiskOpen(false);
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [guidanceOpen]);
+  }, [guidanceOpen, riskOpen]);
 
   const hasAi = question.answer?.source === "system_inferred";
   const answered = !!question.answer;
@@ -422,6 +436,20 @@ function QuestionCard({
               }`}
             >
               i
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setRiskOpen((v) => !v);
+              }}
+              aria-label="Related risks"
+              className={`shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold border transition-colors ${
+                riskOpen
+                  ? "border-frame-red bg-frame-red text-white"
+                  : "border-ey-sonic-silver/60 text-ey-sonic-silver hover:border-frame-red hover:text-frame-red"
+              }`}
+            >
+              r
             </button>
           </div>
           {question.helpText && (
@@ -476,6 +504,32 @@ function QuestionCard({
                 </div>
               )}
             </>
+          )}
+        </div>
+      )}
+
+      {riskOpen && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="mb-3 rounded border border-frame-red/40 bg-frame-red/5 p-3 text-xs space-y-2"
+        >
+          {risks === undefined ? (
+            <p className="text-ey-sonic-silver">Loading…</p>
+          ) : risks.length === 0 ? (
+            <p className="text-ey-sonic-silver">
+              No risks assigned to this question yet.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {risks.map((risk) => (
+                <div key={risk.id}>
+                  <p className="text-frame-red font-semibold">{risk.name}</p>
+                  {risk.description && (
+                    <p className="text-ey-light-gray mt-0.5">{risk.description}</p>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

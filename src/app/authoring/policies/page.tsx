@@ -85,6 +85,7 @@ export default function AuthoringPoliciesPage() {
 
   const refreshSections = useCallback(async () => {
     const res = await fetch("/api/sections");
+    if (!res.ok) return;
     const list = await res.json();
     if (!Array.isArray(list)) return;
     const rows: SectionRow[] = list

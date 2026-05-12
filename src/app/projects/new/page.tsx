@@ -115,7 +115,7 @@ export default function NewProjectPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Failed to create project");
+        throw new Error(err.error || "Failed to create case");
       }
 
       const project = await res.json();
@@ -129,12 +129,12 @@ export default function NewProjectPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">
-      <PageTitle>New Attestation Project</PageTitle>
+      <PageTitle>New Attestation Case</PageTitle>
 
       <Card>
         <form onSubmit={handleSubmit} className="space-y-6">
           <Input
-            label="Project Name"
+            label="Case Name"
             name="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -190,7 +190,7 @@ export default function NewProjectPage() {
               <Button variant="secondary">Cancel</Button>
             </Link>
             <Button type="submit" disabled={submitting || !scopeReady}>
-              {submitting ? "Creating..." : "Create Project"}
+              {submitting ? "Creating..." : "Create Case"}
             </Button>
           </div>
         </form>

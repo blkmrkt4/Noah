@@ -296,7 +296,7 @@ export default function AuthoringQuestionsPage() {
             <EmptyPolicies sectionLabel={activeSection?.displayName ?? "this section"} />
           ) : data.questions.length === 0 ? (
             <p className="text-sm text-ey-sonic-silver">
-              No questions in this section yet. Add them to the corpus YAML in{" "}
+              No questions in this section yet. Add them to the risk library YAML in{" "}
               <code className="text-ey-yellow font-mono">docs/questions/</code>
               {" "}and re-seed.
             </p>

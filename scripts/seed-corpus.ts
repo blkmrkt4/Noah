@@ -276,15 +276,74 @@ async function seedDependencies(
   console.log(`✓ Seeded ${depCount} question dependencies`);
 }
 
+// ─── Seed Risks ─────────────────────────────────────────────────────────────
+
+interface RiskEntry {
+  slug: string;
+  name: string;
+  description?: string;
+  display_order: number;
+  questions?: string[];
+}
+
+async function seedRisks(): Promise<void> {
+  const data = readYaml<{ risks: RiskEntry[] }>("_risks.yaml");
+
+  if (!data.risks || data.risks.length === 0) {
+    console.log("✓ No risks defined in _risks.yaml — skipping");
+    return;
+  }
+
+  for (const risk of data.risks) {
+    const row = await prisma.risk.upsert({
+      where: { slug: risk.slug },
+      update: {
+        name: risk.name,
+        description: risk.description || null,
+        displayOrder: risk.display_order,
+      },
+      create: {
+        slug: risk.slug,
+        name: risk.name,
+        description: risk.description || null,
+        displayOrder: risk.display_order,
+      },
+    });
+
+    // Associate questions by slug
+    if (risk.questions && risk.questions.length > 0) {
+      for (const qSlug of risk.questions) {
+        const question = await prisma.question.findUnique({
+          where: { slug: qSlug },
+        });
+        if (!question) {
+          console.warn(`⚠ Question slug "${qSlug}" not found for risk "${risk.slug}"`);
+          continue;
+        }
+        await prisma.questionRisk.upsert({
+          where: {
+            questionId_riskId: { questionId: question.id, riskId: row.id },
+          },
+          update: {},
+          create: { questionId: question.id, riskId: row.id },
+        });
+      }
+    }
+  }
+
+  console.log(`✓ Seeded ${data.risks.length} risks`);
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log("🏗  ARC Corpus Loader\n");
+  console.log("🏗  ART Corpus Loader\n");
 
   const sectionMap = await seedSections();
   await seedPatterns();
   const slugToVersionId = await seedQuestions(sectionMap);
   await seedDependencies(slugToVersionId);
+  await seedRisks();
 
   console.log("\n✅ Corpus seeded successfully");
 }

@@ -354,6 +354,7 @@ model Question {
 
   section  Section          @relation(fields: [sectionId], references: [id])
   versions QuestionVersion[]
+  risks    QuestionRisk[]
 
   @@map("questions")
 }
@@ -395,6 +396,30 @@ model QuestionDependency {
 
   @@id([parentVersionId, childVersionId])
   @@map("question_dependencies")
+}
+
+model Risk {
+  id           String   @id @default(uuid()) @db.Uuid
+  slug         String   @unique
+  name         String
+  description  String?
+  displayOrder Int      @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  questions QuestionRisk[]
+
+  @@map("risks")
+}
+
+model QuestionRisk {
+  questionId String @map("question_id") @db.Uuid
+  riskId     String @map("risk_id") @db.Uuid
+
+  question Question @relation(fields: [questionId], references: [id])
+  risk     Risk     @relation(fields: [riskId], references: [id])
+
+  @@id([questionId, riskId])
+  @@map("question_risks")
 }
 
 model Answer {

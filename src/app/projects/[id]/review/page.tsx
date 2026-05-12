@@ -101,7 +101,7 @@ export default function ReviewPage() {
           </div>
         </div>
         <a href={`/projects/${projectId}`}>
-          <Button variant="secondary">Back to Project</Button>
+          <Button variant="secondary">Back to Case</Button>
         </a>
       </div>
 

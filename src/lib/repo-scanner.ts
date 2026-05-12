@@ -105,7 +105,7 @@ async function ghFetch<T>(path: string): Promise<T> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
-    "User-Agent": "ARC-RepoScanner",
+    "User-Agent": "ART-RepoScanner",
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 

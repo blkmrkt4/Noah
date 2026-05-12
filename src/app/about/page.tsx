@@ -20,10 +20,10 @@ function Hero() {
     <section className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 items-end">
       <div>
         <p className="text-ey-sonic-silver text-xs uppercase tracking-[0.2em] mb-2">
-          Attestation · Risk · Compliance
+          Attestation · Risk · Technology
         </p>
         <h1 className="text-ey-yellow text-5xl lg:text-6xl font-bold leading-tight">
-          ARC
+          ART
         </h1>
         <p className="text-white text-xl lg:text-2xl mt-3 leading-snug max-w-2xl">
           EY&apos;s risk attestation system for technology products.
@@ -81,7 +81,7 @@ function Promise() {
             isolation.
           </p>
           <p className="text-white leading-relaxed mt-3">
-            ARC is one place where the Commercial Owner answers a
+            ART is one place where the Commercial Owner answers a
             dependency-driven question set <span className="text-ey-yellow font-semibold">once</span>,
             attaches the evidence <span className="text-ey-yellow font-semibold">once</span>, and
             every reviewer in every jurisdiction sees the same canonical
@@ -117,14 +117,14 @@ function Personas() {
   return (
     <section>
       <SectionHeader
-        eyebrow="Who uses ARC"
+        eyebrow="Who uses ART"
         title="Four personas. Four toolsets. One canonical record."
       />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
         <PersonaCard
           tone="purple"
           name="Policy Author"
-          role="Owns the question corpus."
+          role="Owns the risk library."
           tools={[
             "Authoring · Questions",
             "Authoring · Sections",
@@ -240,7 +240,7 @@ function ProcessFlow() {
     <section>
       <SectionHeader
         eyebrow="How the work moves"
-        title="From corpus to attestation, parallel paths land on one record."
+        title="From risk library to attestation, parallel paths land on one record."
       />
       <div className="space-y-3 mt-4">
         <Lane
@@ -258,7 +258,7 @@ function ProcessFlow() {
           persona="Policy Owner"
           steps={[
             "Uploads policy documents to the library",
-            "Runs guidance scan over the question corpus",
+            "Runs guidance scan over the risk library",
             "Reviews and approves AI-extracted guidance",
             "Toggles guidance off for trivial questions",
           ]}
@@ -343,14 +343,14 @@ function Lane({
   );
 }
 
-// ─── Outcome / Why ARC ────────────────────────────────────────────────────────
+// ─── Outcome / Why ART ────────────────────────────────────────────────────────
 
 function Outcome() {
   return (
     <section>
       <SectionHeader
         eyebrow="The point"
-        title="ARC turns a thousand bilateral conversations into one canonical record."
+        title="ART turns a thousand bilateral conversations into one canonical record."
       />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
         <OutcomeCard
@@ -374,7 +374,7 @@ function Outcome() {
           href="/projects"
           className="inline-flex items-center px-4 py-2 rounded-lg bg-ey-yellow text-black font-medium text-sm hover:bg-ey-yellow/90 transition-colors"
         >
-          Open Assets in Process
+          Open Cases
         </Link>
         <Link
           href="/"

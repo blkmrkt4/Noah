@@ -62,7 +62,7 @@ export default function ProjectPage() {
   }, [id]);
 
   if (loading) return <div className="p-8 text-ey-sonic-silver">Loading...</div>;
-  if (!project) return <div className="p-8 text-frame-red">Project not found</div>;
+  if (!project) return <div className="p-8 text-frame-red">Case not found</div>;
 
   const sectionStates = project.sectionStates.sort(
     (a, b) => a.section.displayOrder - b.section.displayOrder

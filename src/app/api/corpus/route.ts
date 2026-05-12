@@ -3,10 +3,18 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-/** GET /api/corpus — Browse the question corpus */
+const FOUNDATION_SECTIONS = new Set(["intake", "triage"]);
+
+/** GET /api/corpus — Browse the risk library by category or by risk */
 export async function GET(req: NextRequest) {
   const section = req.nextUrl.searchParams.get("section");
+  const view = req.nextUrl.searchParams.get("view"); // "risk" | "category" (default)
 
+  if (view === "risk") {
+    return riskView();
+  }
+
+  // ── Category view (default) ───────────────────────────────────────────────
   const sections = await prisma.section.findMany({
     where: section ? { slug: section } : undefined,
     include: {
@@ -30,7 +38,6 @@ export async function GET(req: NextRequest) {
     orderBy: { displayOrder: "asc" },
   });
 
-  // Transform to a friendlier shape
   const result = sections.map((s) => ({
     id: s.id,
     slug: s.slug,
@@ -60,4 +67,85 @@ export async function GET(req: NextRequest) {
   }));
 
   return NextResponse.json(result);
+}
+
+// ── Risk view ─────────────────────────────────────────────────────────────────
+
+async function riskView() {
+  // Fetch all questions with their section, latest version, and risk associations
+  const questions = await prisma.question.findMany({
+    include: {
+      section: true,
+      risks: { include: { risk: true } },
+      versions: {
+        orderBy: { version: "desc" },
+        take: 1,
+      },
+    },
+  });
+
+  const risks = await prisma.risk.findMany({
+    orderBy: { displayOrder: "asc" },
+  });
+
+  type QShape = {
+    id: string;
+    slug: string;
+    sectionSlug: string;
+    sectionName: string;
+    prompt: string | undefined;
+    answerType: string | undefined;
+    helpText: string | null | undefined;
+    required: boolean | undefined;
+  };
+
+  function toShape(q: (typeof questions)[number]): QShape {
+    const latest = q.versions[0];
+    return {
+      id: q.id,
+      slug: q.slug,
+      sectionSlug: q.section.slug,
+      sectionName: q.section.displayName,
+      prompt: latest?.prompt,
+      answerType: latest?.answerType,
+      helpText: latest?.helpText,
+      required: latest?.required,
+    };
+  }
+
+  // Foundation questions (intake, triage)
+  const foundation = questions
+    .filter((q) => FOUNDATION_SECTIONS.has(q.section.slug))
+    .map(toShape);
+
+  // Non-foundation questions grouped by risk
+  const nonFoundation = questions.filter(
+    (q) => !FOUNDATION_SECTIONS.has(q.section.slug)
+  );
+
+  // Build risk buckets
+  const riskBuckets = risks.map((risk) => {
+    const riskQuestions = nonFoundation
+      .filter((q) => q.risks.some((qr) => qr.riskId === risk.id))
+      .map(toShape);
+    return {
+      id: risk.id,
+      slug: risk.slug,
+      name: risk.name,
+      description: risk.description,
+      questions: riskQuestions,
+    };
+  });
+
+  // Unassigned: non-foundation questions with no risk associations
+  const assignedIds = new Set(
+    nonFoundation
+      .filter((q) => q.risks.length > 0)
+      .map((q) => q.id)
+  );
+  const unassigned = nonFoundation
+    .filter((q) => !assignedIds.has(q.id))
+    .map(toShape);
+
+  return NextResponse.json({ foundation, risks: riskBuckets, unassigned });
 }

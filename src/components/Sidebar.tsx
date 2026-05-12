@@ -22,7 +22,7 @@ const GROUPS: NavGroup[] = [
       { href: "/", label: "Dashboard", match: (p) => p === "/" },
       {
         href: "/projects",
-        label: "Assets in Process",
+        label: "Cases",
         match: (p) => p === "/projects" || p.startsWith("/projects/"),
       },
     ],
@@ -32,9 +32,10 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/authoring/policies", label: "Policies" },
       { href: "/authoring/questions", label: "Questions" },
+      { href: "/authoring/risks", label: "Risks" },
       { href: "/authoring/scans", label: "Guidance editor" },
       { href: "/authoring/library", label: "Guidance library" },
-      { href: "/corpus", label: "Corpus" },
+      { href: "/corpus", label: "Risk Library" },
     ],
   },
   {
@@ -65,13 +66,13 @@ export default function Sidebar() {
         </Link>
         <Link
           href="/about"
-          aria-label="About ARC"
+          aria-label="About ART"
           className="rounded transition-opacity hover:opacity-80"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/Brand/arc.svg"
-            alt="ARC"
+            src="/Brand/art.svg"
+            alt="ART"
             className="h-12 w-auto"
           />
         </Link>
